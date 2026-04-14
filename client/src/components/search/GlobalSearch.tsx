@@ -127,7 +127,7 @@ export default function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
         id: `cat_${cat.key}`,
         type: 'categories',
         name: cat.label,
-        subtitle: `${cat.naicsPrefixes.length} NAICS groups`,
+        subtitle: `NAICS: ${cat.naicsPrefixes.length}`,
         meta: null,
       });
     }

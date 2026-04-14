@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { facilitiesApi } from '@/lib/api';
@@ -21,7 +21,15 @@ export default function Facilities() {
   const [cursor, setCursor] = useState<string | undefined>();
   const [prevPages, setPrevPages] = useState<Facility[]>([]);
 
-  const hasFilters = !!(search || stateFilter || naicsFilter || companyFilter);
+  // Sync filters from URL when navigated externally (e.g., from global search)
+  useEffect(() => {
+    const urlNaics = searchParams.get('naics') || '';
+    const urlState = searchParams.get('state') || '';
+    const urlCompany = searchParams.get('company') || '';
+    if (urlNaics !== naicsFilter) { setNaicsFilter(urlNaics); setCursor(undefined); setPrevPages([]); }
+    if (urlState !== stateFilter) { setStateFilter(urlState); setCursor(undefined); setPrevPages([]); }
+    if (urlCompany !== companyFilter) { setCompanyFilter(urlCompany); setCursor(undefined); setPrevPages([]); }
+  }, [searchParams]);
 
   const { data, isLoading } = useQuery({
     queryKey: ['facilities', { search, state: stateFilter, naics: naicsFilter, company: companyFilter, cursor }],
@@ -35,7 +43,7 @@ export default function Facilities() {
     }),
   });
 
-  // Fetch total count when filters are active
+  // Always fetch total count (filtered or unfiltered)
   const { data: countData } = useQuery({
     queryKey: ['facilities-count', { search, state: stateFilter, naics: naicsFilter, company: companyFilter }],
     queryFn: () => facilitiesApi.count({
@@ -44,7 +52,6 @@ export default function Facilities() {
       naics: naicsFilter || undefined,
       company: companyFilter || undefined,
     }),
-    enabled: hasFilters,
   });
 
   const displayItems = [...prevPages, ...(data?.data ?? [])];
@@ -143,8 +150,8 @@ export default function Facilities() {
       {displayItems.length > 0 && (
         <p className="text-xs text-fg-soft">
           Showing {displayItems.length.toLocaleString()}
-          {hasFilters && countData ? ` of ${countData.count.toLocaleString()}` : ''}
-          {' '}factories{data?.nextCursor && !countData ? '+' : ''}
+          {countData ? ` of ${countData.count.toLocaleString()}` : '+'}
+          {' '}factories
         </p>
       )}
 

@@ -80,7 +80,7 @@ export default function Companies() {
       {/* Results count */}
       {displayItems.length > 0 && (
         <p className="text-xs text-fg-soft">
-          Showing {displayItems.length.toLocaleString()} companies{data?.nextCursor ? '+' : ''}
+          Showing {displayItems.length.toLocaleString()} of {totalCompanies.toLocaleString()} companies
         </p>
       )}
 
