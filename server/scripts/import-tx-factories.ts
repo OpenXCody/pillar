@@ -54,7 +54,6 @@ async function main() {
   }).returning();
 
   const rows: TxFactoryRow[] = await new Promise((resolve, reject) => {
-    const results: TxFactoryRow[] = [];
     Papa.parse(createReadStream(CSV_PATH), {
       header: true,
       skipEmptyLines: true,

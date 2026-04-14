@@ -319,6 +319,80 @@ export const COMPANY_RULES: CompanyRule[] = [
 
   // Aerospace (additional)
   { patterns: [/\bTRIUMPH\s+GROUP\b/i, /\bTRIUMPH\s+AEROSTRUCTURES\b/i, /\bTRIUMPH\s+THERMAL\b/i, /\bTRIUMPH\s+ACTUATION\b/i, /\bTRIUMPH\s+GEAR\b/i], canonical: 'Triumph Group' },
+  { patterns: [/\bSPIRIT\s+AERO\b/i], canonical: 'Spirit AeroSystems' },
+  { patterns: [/\bHOWMET\b/i], canonical: 'Howmet Aerospace' },
+  { patterns: [/\bARCONIC\b/i], canonical: 'Arconic' },
+  { patterns: [/\bALCOA\b/i], canonical: 'Alcoa' },
+  { patterns: [/\bNOVELIS\b/i], canonical: 'Novelis' },
+  { patterns: [/\bL3\s+TECHNOLOGIES\b/i, /\bL-?3\s+COMM/i, /\bL-?3\s+WARRIOR\b/i], canonical: 'L3Harris' },
+
+  // Industrial Equipment & Automation
+  { patterns: [/\bAPPLIED\s+MATERIALS\b/i], canonical: 'Applied Materials' },
+  { patterns: [/\bINGERSOLL[\s-]?RAND\b/i, /\bINGERSOLL\b/i], canonical: 'Ingersoll Rand' },
+  { patterns: [/\bATLAS\s+COPCO\b/i], canonical: 'Atlas Copco' },
+  { patterns: [/\bSANDVIK\b/i], canonical: 'Sandvik' },
+  { patterns: [/\bALSTOM\b/i], canonical: 'Alstom' },
+  { patterns: [/\bAGCO\b/i], canonical: 'AGCO' },
+  { patterns: [/\bABB\b/], canonical: 'ABB' },
+  { patterns: [/\bSCHNEIDER\s+ELECTRIC\b/i, /\bSCHNEIDER\s+SQUARE\b/i], canonical: 'Schneider Electric' },
+  { patterns: [/\bWESTLAKE\s+CHEMICAL\b/i, /\bWESTLAKE\s+VINYLS\b/i, /\bWESTLAKE\s+PIPE\b/i, /\bWESTLAKE\s+POLYMERS\b/i], canonical: 'Westlake Chemical' },
+  { patterns: [/\bMAGNA\s+INT/i, /\bMAGNA\s+SEATING\b/i, /\bMAGNA\s+MIRROR/i, /\bMAGNA\s+STEYR\b/i, /\bMAGNA\s+CLOSURES\b/i, /\bMAGNA\s+POWER/i, /\bMAGNA\s+ELECT/i], canonical: 'Magna International' },
+  { patterns: [/\bPHILLIPS\s+66\b/i, /\bPHILLIPS\s+PETROLEUM\b/i, /\bCONOCO\s*PHILLIPS\b/i], canonical: 'Phillips 66' },
+
+  // Gas & Industrial Supply
+  { patterns: [/\bAIRGAS\b/i], canonical: 'Airgas' },
+
+  // Food & Beverage (additional)
+  { patterns: [/\bFOSTER\s+FARMS\b/i], canonical: 'Foster Farms' },
+  { patterns: [/\bTRIDENT\s+SEAFOODS\b/i], canonical: 'Trident Seafoods' },
+  { patterns: [/\bFRITO[\s-]?LAY\b/i], canonical: 'Frito-Lay' },
+  { patterns: [/\bANHEUSER[\s-]?BUSCH\b/i, /\bAB\s+INBEV\b/i], canonical: 'Anheuser-Busch' },
+  { patterns: [/\bMOLSON\s+COORS\b/i, /\bMILLERCOORS\b/i], canonical: 'Molson Coors' },
+  { patterns: [/\bKEURIG\b/i, /\bDR\s+PEPPER\b/i], canonical: 'Keurig Dr Pepper' },
+
+  // Convenience Stores & Chains
+  { patterns: [/\bJACKSON'?S\s+FOOD\b/i], canonical: "Jackson's Food Stores" },
+  { patterns: [/\bLESLIE'?S\s+POOL\b/i, /\bLESLIE'?S\s+SWIMMING\b/i], canonical: "Leslie's Pool Supplies" },
+  { patterns: [/\bSTINKER\s+STO/i, /\bSTINKER\s+#/i, /\bSTINKER\b/i], canonical: 'Stinker Stores' },
+  { patterns: [/\bSUPER\s+PANTRY\b/i], canonical: 'Super Pantry' },
+  { patterns: [/\bROAD\s+RANGER\b/i], canonical: 'Road Ranger' },
+  { patterns: [/\bBRIDENT\s+DENTAL\b/i], canonical: 'Brident Dental' },
+  { patterns: [/\bEXPRESS\s+LANE\s+(?:OIL|TIRE|SERVICE|CAR)/i], canonical: 'Express Lane' },
+
+  // Concrete & Aggregates (regional chains)
+  { patterns: [/\bROBERTSON'?S\s+READY\b/i], canonical: "Robertson's Ready Mix" },
+  { patterns: [/\bGENEVA\s+ROCK\b/i], canonical: 'Geneva Rock' },
+  { patterns: [/\bLAKESIDE\s+INDUSTRIES\b/i], canonical: 'Lakeside Industries' },
+  { patterns: [/\bSOUTHERN\s+CONCRETE\b/i], canonical: 'Southern Concrete' },
+
+  // Building Products & Home Improvement
+  { patterns: [/\bPELLA\s+(?:CORP|WINDOW|DOOR)/i, /\bPELLA\b/i], canonical: 'Pella' },
+  { patterns: [/\bMARVIN\s+(?:WINDOW|DOOR|LUMBER)/i], canonical: 'Marvin Windows' },
+  { patterns: [/\bMASONITE\b/i], canonical: 'Masonite' },
+  { patterns: [/\bARMSTRONG\s+(?:FLOORING|WORLD|CEILING|CABINET|INT)/i, /\bARMSTRONG\s+\w+\s+(?:PLANT|FACILITY|FACTORY)/i], canonical: 'Armstrong' },
+  { patterns: [/\bMOHAWK\s+(?:INDUSTR|CARPET|FLOORING|HOME)/i, /\bDALTILE\b/i], canonical: 'Mohawk Industries' },
+  { patterns: [/\bSHAW\s+(?:INDUSTR|CARPET|FLOORING|PLANT)/i], canonical: 'Shaw Industries' },
+
+  // Consumer Products
+  { patterns: [/\bPROCTER\s*(?:&|AND)\s*GAMBLE\b/i, /\bP\s*&\s*G\b/], canonical: 'Procter & Gamble' },
+  { patterns: [/\bCOLGATE[\s-]?PALMOLIVE\b/i, /\bCOLGATE\b/i], canonical: 'Colgate-Palmolive' },
+  { patterns: [/\bKIMBERLY[\s-]?CLARK\b/i], canonical: 'Kimberly-Clark' },
+  { patterns: [/\bCHURCH\s*(?:&|AND)\s*DWIGHT\b/i], canonical: 'Church & Dwight' },
+  { patterns: [/\bCLOROX\b/i], canonical: 'Clorox' },
+  { patterns: [/\bSC\s+JOHNSON\b/i, /\bS\.?C\.?\s+JOHNSON\b/i], canonical: 'SC Johnson' },
+
+  // Medical Devices & Pharma (additional)
+  { patterns: [/\bMEDTRONIC\b/i], canonical: 'Medtronic' },
+  { patterns: [/\bSTRYKER\b/i], canonical: 'Stryker' },
+  { patterns: [/\bBECTON\s+DICKINSON\b/i, /\bBD\s+MEDICAL\b/i], canonical: 'Becton Dickinson' },
+  { patterns: [/\bZIMMER\s*BIOMET\b/i, /\bZIMMER\s+(?:SURG|INC|HOLD|SPINE|DENTAL)/i], canonical: 'Zimmer Biomet' },
+  { patterns: [/\bBOSTON\s+SCIENTIFIC\b/i], canonical: 'Boston Scientific' },
+  { patterns: [/\bBAXTER\s+(?:INT|HEALTH|PHARM)/i], canonical: 'Baxter International' },
+
+  // Coatings & Sealants (additional)
+  { patterns: [/\bRPM\s+(?:INT|WOOD|IND)/i, /\bRUST[\s-]?OLEUM\b/i], canonical: 'RPM International' },
+  { patterns: [/\bDAP\s+(?:PROD|INC|MANUFACT)/i], canonical: 'DAP Products' },
+  { patterns: [/\bBOSTIK\b/i], canonical: 'Bostik' },
 ];
 
 export function normalizeCompanyName(rawName: string): string {

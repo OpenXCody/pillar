@@ -9,7 +9,7 @@
  */
 
 import { db } from '../db/index.js';
-import { facilities, companies } from '../db/schema.js';
+import { companies } from '../db/schema.js';
 import { sql } from 'drizzle-orm';
 import { resolveCompanyName, cleanCompanyName } from '../pipeline/normalize/nameNormalizer.js';
 import { COMPANY_RULES, normalizeCompanyName } from '@shared/companyNormalization.js';
@@ -102,7 +102,7 @@ async function main() {
 
   while (true) {
     // Get batch of facilities without companies (cursor-based to avoid skipping)
-    const batch = cursor
+    const batch: Record<string, unknown>[] = cursor
       ? await db.execute(sql`
           SELECT id, name, company_name, parent_company_from_tri
           FROM facilities

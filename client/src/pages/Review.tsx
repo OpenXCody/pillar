@@ -54,8 +54,8 @@ export default function Review() {
 
   // Accumulate pages for infinite scroll
   const displayItems: ReviewCandidate[] = cursor
-    ? [...allItems, ...((data?.data as ReviewCandidate[]) ?? [])]
-    : ((data?.data as ReviewCandidate[]) ?? []);
+    ? [...allItems, ...((data?.data as unknown as ReviewCandidate[]) ?? [])]
+    : ((data?.data as unknown as ReviewCandidate[]) ?? []);
 
   const confirmMutation = useMutation({
     mutationFn: (id: string) => reviewApi.confirm(id),

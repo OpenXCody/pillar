@@ -38,7 +38,6 @@ async function main() {
   console.log('Importing TX Manufacturing Companies...');
 
   const rows: TxCompanyRow[] = await new Promise((resolve, reject) => {
-    const results: TxCompanyRow[] = [];
     Papa.parse(createReadStream(CSV_PATH), {
       header: true,
       skipEmptyLines: true,

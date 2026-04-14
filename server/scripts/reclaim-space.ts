@@ -72,36 +72,35 @@ async function main() {
   for (let i = 0; i < records.length; i += BATCH_SIZE) {
     const batch = records.slice(i, i + BATCH_SIZE);
 
-    // Use raw SQL for fast bulk insert
-    const values = batch.map((r: any) => sql`(
-      ${r.id}::uuid, ${r.source}, ${r.source_run_id}::uuid, ${r.source_record_id},
-      ${r.raw_name}, ${r.raw_address}, ${r.raw_city}, ${r.raw_state}, ${r.raw_zip}, ${r.raw_county},
-      ${r.raw_latitude}, ${r.raw_longitude}, ${r.raw_naics_code}, ${r.raw_sic_code},
-      ${r.registry_id}, ${r.program_ids},
-      ${r.tri_parent_company_name}, ${r.tri_parent_duns}, ${r.tri_facility_id},
-      ${r.osha_employee_count}, ${r.osha_activity_id},
-      ${r.fsis_est_number}, ${r.fsis_size_category},
-      NULL,
-      ${r.facility_id ? r.facility_id : null}::uuid,
-      ${r.fetched_at ? new Date(r.fetched_at) : null}::timestamptz,
-      ${r.normalized_at ? new Date(r.normalized_at) : null}::timestamptz,
-      ${r.matched_at ? new Date(r.matched_at) : null}::timestamptz
-    )`);
-
-    await sql`
-      INSERT INTO raw_records (
-        id, source, source_run_id, source_record_id,
-        raw_name, raw_address, raw_city, raw_state, raw_zip, raw_county,
-        raw_latitude, raw_longitude, raw_naics_code, raw_sic_code,
-        registry_id, program_ids,
-        tri_parent_company_name, tri_parent_duns, tri_facility_id,
-        osha_employee_count, osha_activity_id,
-        fsis_est_number, fsis_size_category,
-        raw_json,
-        facility_id, fetched_at, normalized_at, matched_at
-      )
-      VALUES ${sql.join(values, sql`, `)}
-    `;
+    // Insert each row individually
+    for (const r of batch) {
+      await sql`
+        INSERT INTO raw_records (
+          id, source, source_run_id, source_record_id,
+          raw_name, raw_address, raw_city, raw_state, raw_zip, raw_county,
+          raw_latitude, raw_longitude, raw_naics_code, raw_sic_code,
+          registry_id, program_ids,
+          tri_parent_company_name, tri_parent_duns, tri_facility_id,
+          osha_employee_count, osha_activity_id,
+          fsis_est_number, fsis_size_category,
+          raw_json,
+          facility_id, fetched_at, normalized_at, matched_at
+        ) VALUES (
+          ${r.id}::uuid, ${r.source}, ${r.source_run_id}::uuid, ${r.source_record_id},
+          ${r.raw_name}, ${r.raw_address}, ${r.raw_city}, ${r.raw_state}, ${r.raw_zip}, ${r.raw_county},
+          ${r.raw_latitude}, ${r.raw_longitude}, ${r.raw_naics_code}, ${r.raw_sic_code},
+          ${r.registry_id}, ${r.program_ids},
+          ${r.tri_parent_company_name}, ${r.tri_parent_duns}, ${r.tri_facility_id},
+          ${r.osha_employee_count}, ${r.osha_activity_id},
+          ${r.fsis_est_number}, ${r.fsis_size_category},
+          NULL,
+          ${r.facility_id || null}::uuid,
+          ${r.fetched_at ? new Date(r.fetched_at) : null}::timestamptz,
+          ${r.normalized_at ? new Date(r.normalized_at) : null}::timestamptz,
+          ${r.matched_at ? new Date(r.matched_at) : null}::timestamptz
+        )
+      `;
+    }
 
     imported += batch.length;
     console.log(`  Imported ${imported}/${records.length}`);
@@ -113,16 +112,16 @@ async function main() {
   if (fSources.length > 0) {
     for (let i = 0; i < fSources.length; i += BATCH_SIZE) {
       const batch = fSources.slice(i, i + BATCH_SIZE);
-      const values = batch.map((r: any) => sql`(
-        ${r.id}::uuid, ${r.facility_id}::uuid, ${r.raw_record_id}::uuid,
-        ${r.source}, ${r.source_record_id}, ${r.fields_provided},
-        ${r.linked_at ? new Date(r.linked_at) : new Date()}::timestamptz
-      )`);
-
-      await sql`
-        INSERT INTO facility_sources (id, facility_id, raw_record_id, source, source_record_id, fields_provided, linked_at)
-        VALUES ${sql.join(values, sql`, `)}
-      `;
+      for (const r of batch) {
+        await sql`
+          INSERT INTO facility_sources (id, facility_id, raw_record_id, source, source_record_id, fields_provided, linked_at)
+          VALUES (
+            ${r.id}::uuid, ${r.facility_id}::uuid, ${r.raw_record_id}::uuid,
+            ${r.source}, ${r.source_record_id}, ${r.fields_provided},
+            ${r.linked_at ? new Date(r.linked_at) : new Date()}::timestamptz
+          )
+        `;
+      }
     }
     console.log(`  Imported ${fSources.length} facility_source records`);
   }
