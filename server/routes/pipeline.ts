@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { getPipelineStatus, runPipeline } from '../pipeline/orchestrator.js';
+import { runEnrichment } from '../pipeline/enrichment.js';
 import type { DataSource } from '@shared/types.js';
 
 export const pipelineRouter = Router();
@@ -16,12 +17,25 @@ pipelineRouter.post('/run', async (req, res) => {
 
   const { source } = req.body as { source?: DataSource };
   if (!source) {
-    return res.status(400).json({ error: 'source is required (epa_echo or epa_tri)' });
+    return res.status(400).json({ error: 'source is required' });
   }
 
   res.json({ message: `Pipeline started for ${source}` });
 
   runPipeline(source).catch(err => {
     console.error(`[Pipeline] Run failed:`, err);
+  });
+});
+
+pipelineRouter.post('/enrich', async (_req, res) => {
+  const status = getPipelineStatus();
+  if (status.running) {
+    return res.status(409).json({ error: 'Pipeline is already running' });
+  }
+
+  res.json({ message: 'Enrichment started' });
+
+  runEnrichment().catch(err => {
+    console.error(`[Enrichment] Failed:`, err);
   });
 });

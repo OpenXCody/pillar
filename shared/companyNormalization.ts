@@ -393,6 +393,160 @@ export const COMPANY_RULES: CompanyRule[] = [
   { patterns: [/\bRPM\s+(?:INT|WOOD|IND)/i, /\bRUST[\s-]?OLEUM\b/i], canonical: 'RPM International' },
   { patterns: [/\bDAP\s+(?:PROD|INC|MANUFACT)/i], canonical: 'DAP Products' },
   { patterns: [/\bBOSTIK\b/i], canonical: 'Bostik' },
+
+  // Railroad & Transportation Equipment
+  { patterns: [/\bPROGRESS\s+RAIL\b/i], canonical: 'Progress Rail' },
+  { patterns: [/\bTRINITY\s+INDUSTR/i, /\bTRINITY\s+RAIL\b/i, /\bTRINITY\s+MARINE\b/i], canonical: 'Trinity Industries' },
+  { patterns: [/\bFOREST\s+RIVER\b/i, /\bSTARCRAFT\s+BUS\b/i], canonical: 'Forest River' },
+  { patterns: [/\bFLEETWOOD\s+(?:HOME|ENTER)/i], canonical: 'Fleetwood Homes' },
+  { patterns: [/\bGREENBRIER\b/i], canonical: 'Greenbrier' },
+  { patterns: [/\bNEW\s+FLYER\b/i], canonical: 'New Flyer' },
+  { patterns: [/\bWABASH\s+NATIONAL\b/i], canonical: 'Wabash National' },
+
+  // Glass & Ceramics
+  { patterns: [/\bAGC\s+(?:GLASS|SOLAR|FLAT|AUTO)/i, /\bAGC\s+\w+\s+PLANT\b/i], canonical: 'AGC Glass' },
+  { patterns: [/\bGUARDIAN\s+(?:GLASS|INDUSTR)/i], canonical: 'Guardian Glass' },
+  { patterns: [/\bVITRO\b/i], canonical: 'Vitro' },
+
+  // Steel & Metals (additional)
+  { patterns: [/\bGERDAU\b/i], canonical: 'Gerdau' },
+  { patterns: [/\bRHI\s+MAGNESITA\b/i], canonical: 'RHI Magnesita' },
+  { patterns: [/\bSUZUKI\s+GARPHYTTAN\b/i], canonical: 'Suzuki Garphyttan' },
+  { patterns: [/\bMETALSA\b/i], canonical: 'Metalsa' },
+  { patterns: [/\bRUGER\b/i, /\bSTURM[\s,]+RUGER\b/i], canonical: 'Sturm, Ruger & Co.' },
+  { patterns: [/\bSMITH\s+(?:&|AND)\s+WESSON\b/i], canonical: 'Smith & Wesson' },
+  { patterns: [/\bOLYMPUS\s+STEEL\b/i], canonical: 'Olympic Steel' },
+  { patterns: [/\bCARPENTER\s+TECH/i], canonical: 'Carpenter Technology' },
+  { patterns: [/\bHAYNES\s+INT/i], canonical: 'Haynes International' },
+  { patterns: [/\bSCHAEFFLER\b/i], canonical: 'Schaeffler' },
+  { patterns: [/\bSKF\b/i], canonical: 'SKF' },
+
+  // Automotive (additional)
+  { patterns: [/\bLEAR\s+CORP/i, /\bLEAR\b/i], canonical: 'Lear' },
+  { patterns: [/\bDENSO\b/i], canonical: 'Denso' },
+  { patterns: [/\bAIRIN\b/i, /\bAISIN\b/i], canonical: 'Aisin' },
+  { patterns: [/\bCONTINENTAL\s+(?:AUTO|AG|TIRE|BRAKE)/i], canonical: 'Continental AG' },
+  { patterns: [/\bAPTIV\b/i, /\bDELPHI\b/i], canonical: 'Aptiv' },
+  { patterns: [/\bGENTEX\b/i], canonical: 'Gentex' },
+  { patterns: [/\bMARTHA\s+STEWART\b/i], canonical: 'Martha Stewart' },
+  { patterns: [/\bMODINE\s+MANUFACTURING\b/i], canonical: 'Modine' },
+  { patterns: [/\bSUPERIOR\s+INDUSTRIES\b/i], canonical: 'Superior Industries' },
+  { patterns: [/\bDORMAN\b/i], canonical: 'Dorman Products' },
+  { patterns: [/\bMARTINREA\b/i], canonical: 'Martinrea' },
+
+  // Plastics & Rubber (additional)
+  { patterns: [/\bRPC\s+GROUP\b/i], canonical: 'RPC Group' },
+  { patterns: [/\bIPEX\b/i], canonical: 'IPEX' },
+  { patterns: [/\bGOLEX\b/i], canonical: 'Golex' },
+
+  // Paper/Forestry (additional)
+  { patterns: [/\bSAPIPI\b/i, /\bSAPPI\b/i], canonical: 'Sappi' },
+  { patterns: [/\bCLEARWATER\s+PAPER\b/i], canonical: 'Clearwater Paper' },
+  { patterns: [/\bRESSOLUTE\s+FOREST\b/i, /\bRESOLUTE\s+FOREST\b/i], canonical: 'Resolute Forest Products' },
+  { patterns: [/\bVERSO\b/i], canonical: 'Verso' },
+
+  // Textiles & Apparel
+  { patterns: [/\bHANES\s*BRANDS\b/i, /\bHANES\b/i], canonical: 'Hanesbrands' },
+  { patterns: [/\bPVH\s+CORP/i, /\bCALVIN\s+KLEIN\b/i, /\bTOMMY\s+HILFIGER\b/i], canonical: 'PVH' },
+  { patterns: [/\bVF\s+CORP/i, /\bWRANGLER\b/i], canonical: 'VF Corporation' },
+  { patterns: [/\bMILLIKEN\s+(?:&|AND)\s+CO/i, /\bMILLIKEN\b/i], canonical: 'Milliken' },
+
+  // Semiconductors (additional)
+  { patterns: [/\bQORVO\b/i], canonical: 'Qorvo' },
+  { patterns: [/\bMARVELL\s+TECH/i, /\bMARVELL\b/i], canonical: 'Marvell' },
+  { patterns: [/\bSKYWORKS\b/i], canonical: 'Skyworks' },
+  { patterns: [/\bWOLFSPEED\b/i, /\bCREE\b/i], canonical: 'Wolfspeed' },
+
+  // Furniture & Wood Products
+  { patterns: [/\bHERMAN\s+MILLER\b/i, /\bMILLERKNOLL\b/i], canonical: 'MillerKnoll' },
+  { patterns: [/\bSTEELCASE\b/i], canonical: 'Steelcase' },
+  { patterns: [/\bHAWORTH\b/i], canonical: 'Haworth' },
+  { patterns: [/\bASHLEY\s+FURNITURE\b/i, /\bASHLEY\s+INDUSTR/i], canonical: 'Ashley Furniture' },
+  { patterns: [/\bLA[\s-]?Z[\s-]?BOY\b/i], canonical: 'La-Z-Boy' },
+
+  // Recreational Vehicles
+  { patterns: [/\bTHOR\s+INDUSTR/i, /\bAIRSTREAM\b/i], canonical: 'Thor Industries' },
+  { patterns: [/\bWINNEBAGO\b/i], canonical: 'Winnebago' },
+  { patterns: [/\bPOLARIS\s+(?:INDUSTR|INC|CORP)/i, /\bPOLARIS\b/i], canonical: 'Polaris' },
+  { patterns: [/\bBRP\b/i, /\bBOMBARDIER\s+REC/i], canonical: 'BRP' },
+
+  // Defense (additional)
+  { patterns: [/\bGDLS\b/i, /\bGENERAL\s+DYNAMICS\s+LAND/i], canonical: 'General Dynamics' },
+  { patterns: [/\bELBIT\b/i], canonical: 'Elbit Systems' },
+
+  // Machinery & Pumps
+  { patterns: [/\bSULZER\b/i], canonical: 'Sulzer' },
+  { patterns: [/\bGRUNDFOS\b/i], canonical: 'Grundfos' },
+  { patterns: [/\bNIDEC\b/i], canonical: 'Nidec' },
+  { patterns: [/\bBALDOR\b/i], canonical: 'Baldor Electric' },
+  { patterns: [/\bREXNORD\b/i], canonical: 'Rexnord' },
+  { patterns: [/\bBAKER\s+HUGHES\b/i], canonical: 'Baker Hughes' },
+  { patterns: [/\bFLOWER\s+FOODS\b/i, /\bFLOWERS\s+BAKING\b/i, /\bFLOWERS\s+FOODS\b/i], canonical: 'Flowers Foods' },
+
+  // Utilities & Energy Equipment
+  { patterns: [/\bVESTAS\b/i], canonical: 'Vestas' },
+  { patterns: [/\bGE\s+WIND\b/i], canonical: 'GE Vernova' },
+  { patterns: [/\bNEXTERA\b/i], canonical: 'NextEra Energy' },
+
+  // Dairy & Meat (additional)
+  { patterns: [/\bDEAN\s+FOODS\b/i], canonical: 'Dean Foods' },
+  { patterns: [/\bLAND\s+O[\s']?LAKES\b/i], canonical: "Land O'Lakes" },
+  { patterns: [/\bCACIQUE\b/i], canonical: 'Cacique' },
+  { patterns: [/\bGOYA\b/i], canonical: 'Goya Foods' },
+  { patterns: [/\bDANONE\b/i, /\bDANNON\b/i], canonical: 'Danone' },
+  { patterns: [/\bSCHREIBER\s+FOOD/i], canonical: 'Schreiber Foods' },
+  { patterns: [/\bLEPRINO\s+FOOD/i], canonical: 'Leprino Foods' },
+  { patterns: [/\bSAPUTO\b/i], canonical: 'Saputo' },
+  { patterns: [/\bKAFTA\b/i], canonical: 'Kraft Heinz' },
+  { patterns: [/\bKRAFT[\s-]?HEINZ\b/i, /\bKRAFT\s+FOOD/i, /\bHEINZ\b/i, /\bOSCAR\s+MAYER\b/i], canonical: 'Kraft Heinz' },
+  { patterns: [/\bMAPLE\s+LEAF\b/i], canonical: 'Maple Leaf Foods' },
+  { patterns: [/\bCAMPBELL\s+SOUP\b/i, /\bCAMPBELL'?S?\b/i], canonical: 'Campbell Soup' },
+  { patterns: [/\bHILLSHIRE\b/i], canonical: 'Hillshire Brands' },
+  { patterns: [/\bINTERSTATE\s+BAKER/i, /\bINTERSTATE\s+BRAND/i], canonical: 'Interstate Brands' },
+  { patterns: [/\bBIMBO\s+BAKE/i, /\bBIMBO\b/i], canonical: 'Grupo Bimbo' },
+  { patterns: [/\bRICH\s+PRODUCTS\b/i, /\bRICH'?S?\s+(?:FOOD|PROD|INC)/i], canonical: 'Rich Products' },
+  { patterns: [/\bSARALEE\b/i, /\bSARA\s+LEE\s+FOOD/i, /\bSARA\s+LEE\s+BAKE/i], canonical: 'Sara Lee' },
+  { patterns: [/\bCHOBANI\b/i], canonical: 'Chobani' },
+
+  // Snacks & Confectionery
+  { patterns: [/\bMARS\s+(?:INC|PET|FOOD|WRIGLEY|CHOC)/i, /\bM&M[\s/]?MARS\b/i], canonical: 'Mars' },
+  { patterns: [/\bFERRERA\b/i, /\bFERRARA\s+CANDY\b/i], canonical: 'Ferrara Candy' },
+  { patterns: [/\bRUSSELL\s+STOVER\b/i], canonical: 'Russell Stover' },
+
+  // Wine & Spirits
+  { patterns: [/\bE\s*&?\s*J\s+GALLO\b/i, /\bGALLO\s+WINER/i], canonical: 'E. & J. Gallo' },
+  { patterns: [/\bBROWN[\s-]?FORMAN\b/i], canonical: 'Brown-Forman' },
+  { patterns: [/\bCONSTELLATION\s+BRAND/i], canonical: 'Constellation Brands' },
+  { patterns: [/\bDIAGEO\b/i], canonical: 'Diageo' },
+  { patterns: [/\bBEAM\s+SUNTORY\b/i, /\bJIM\s+BEAM\b/i], canonical: 'Beam Suntory' },
+  { patterns: [/\bJACK\s+DANIEL/i], canonical: 'Brown-Forman' },
+
+  // Animal Feed & Pet Food
+  { patterns: [/\bPURINA\b/i, /\bRALSTON\s+PURINA\b/i], canonical: 'Purina' },
+  { patterns: [/\bKENT\s+(?:FEED|PET|NUTRITION)/i], canonical: 'Kent Nutrition' },
+  { patterns: [/\bNUTRIEN\b/i], canonical: 'Nutrien' },
+  { patterns: [/\bMOSAIC\s+(?:CO|FERT|PHOSPH)/i, /\bMOSAIC\b/i], canonical: 'Mosaic' },
+
+  // Lumber & Building Materials (additional)
+  { patterns: [/\bWEST\s+FRASER\b/i], canonical: 'West Fraser' },
+  { patterns: [/\bLOUISIANA[\s-]?PACIFIC\b/i, /\bLP\s+BUILD/i], canonical: 'Louisiana-Pacific' },
+  { patterns: [/\bTREX\b/i], canonical: 'Trex' },
+  { patterns: [/\bJAMES\s+HARDIE\b/i], canonical: 'James Hardie' },
+  { patterns: [/\bUSG\s+CORP/i, /\bUSG\b/i], canonical: 'USG' },
+  { patterns: [/\bKNAUF\b/i], canonical: 'Knauf' },
+
+  // Wire & Cable
+  { patterns: [/\bSOUTHWIRE\b/i], canonical: 'Southwire' },
+  { patterns: [/\bGENERAL\s+CABLE\b/i], canonical: 'General Cable' },
+  { patterns: [/\bENCORE\s+WIRE\b/i], canonical: 'Encore Wire' },
+
+  // Electronics & Sensors
+  { patterns: [/\bFLEX\s+LTD\b/i, /\bFLEXTRONICS\b/i], canonical: 'Flex' },
+  { patterns: [/\bSENSATA\b/i], canonical: 'Sensata Technologies' },
+  { patterns: [/\bAMPHENOL\b/i], canonical: 'Amphenol' },
+  { patterns: [/\bMOLEX\b/i], canonical: 'Molex' },
+  { patterns: [/\bVISHAY\b/i], canonical: 'Vishay' },
+  { patterns: [/\bKEYSIGHT\b/i], canonical: 'Keysight' },
 ];
 
 export function normalizeCompanyName(rawName: string): string {
@@ -431,8 +585,28 @@ function toTitleCase(str: string): string {
     .join(' ');
 }
 
+/**
+ * Words that indicate a name is NOT a company (government, education, etc.)
+ */
+const NON_COMPANY_INDICATORS = /\b(?:COUNTY|CITY\s+OF|STATE\s+OF|DEPT\s+OF|DEPARTMENT|UNIVERSITY|SCHOOL|DISTRICT|MUNICIPAL|BOROUGH|TOWNSHIP|VILLAGE\s+OF|BUREAU|COMMISSION|AUTHORITY|AGENCY|COUNCIL|CHURCH|LIBRARY|HOSPITAL|CLINIC|MEDICAL\s+CENTER|FIRE\s+DEPT|POLICE|SHERIFF|COURT)\b/i;
+
+/**
+ * Corporate suffixes that signal a name is a company
+ */
+const CORPORATE_SUFFIXES = /,?\s*\b(INC\.?|INCORPORATED|LLC|L\.?L\.?C\.?|LTD\.?|LIMITED|CORP\.?|CORPORATION|CO\.?|COMPANY|L\.?P\.?|HOLDINGS?|ENTERPRISES?|INDUSTRIES?\b|INTERNATIONAL|MANUFACTURING|MFG\.?)\s*$/i;
+
+/**
+ * Detect if a name has corporate-like structure (has a suffix or is multi-word with a recognizable pattern)
+ */
+function hasCorporateStructure(name: string): boolean {
+  return CORPORATE_SUFFIXES.test(name);
+}
+
 export function extractCompanyFromFacilityName(facilityName: string): string | null {
   if (!facilityName) return null;
+
+  // Skip government/educational facilities
+  if (NON_COMPANY_INDICATORS.test(facilityName)) return null;
 
   // 1. Direct rule match against the full facility name
   for (const rule of COMPANY_RULES) {
@@ -441,7 +615,37 @@ export function extractCompanyFromFacilityName(facilityName: string): string | n
     }
   }
 
-  // 2. Try splitting on various separator patterns and checking the left side
+  // 2. "DIVISION OF [COMPANY]" / "SUBSIDIARY OF [COMPANY]" / "A [COMPANY] COMPANY"
+  const divisionOf = facilityName.match(/\b(?:DIVISION|SUBSIDIARY|UNIT|BRANCH|DEPT)\s+OF\s+(.+)$/i);
+  if (divisionOf) {
+    const parent = divisionOf[1].trim();
+    const normalized = normalizeCompanyName(parent);
+    if (normalized !== cleanCompanyName(parent)) return normalized;
+    if (hasCorporateStructure(parent)) return cleanCompanyName(parent);
+  }
+
+  const aCompanyOf = facilityName.match(/^(.+?)\s+(?:A\s+)?(?:DIVISION|SUBSIDIARY)\s+OF/i);
+  if (aCompanyOf) {
+    // The part after "OF" is the parent, but let's also check what comes after
+    const afterOf = facilityName.replace(aCompanyOf[0], '').trim();
+    if (afterOf) {
+      const normalized = normalizeCompanyName(afterOf);
+      if (normalized !== cleanCompanyName(afterOf)) return normalized;
+      if (hasCorporateStructure(afterOf)) return cleanCompanyName(afterOf);
+    }
+  }
+
+  // 3. "DBA [NAME]" pattern — use the DBA as the company
+  const dbaMatch = facilityName.match(/\bDBA\s+(.+)$/i);
+  if (dbaMatch) {
+    const dbaName = dbaMatch[1].trim();
+    const normalized = normalizeCompanyName(dbaName);
+    if (normalized !== cleanCompanyName(dbaName)) return normalized;
+    // DBA name with corporate suffix is a valid company
+    if (hasCorporateStructure(dbaName)) return cleanCompanyName(dbaName);
+  }
+
+  // 4. Try splitting on various separator patterns and checking the left side
   const separators = [' - ', ' – ', ' — ', ' / ', ', '];
   for (const sep of separators) {
     const idx = facilityName.indexOf(sep);
@@ -453,25 +657,24 @@ export function extractCompanyFromFacilityName(facilityName: string): string | n
     }
   }
 
-  // 3. Colon separator: "COMPANY:FACILITY" or "COMPANY: FACILITY"
+  // 5. Colon separator: "COMPANY:FACILITY" or "COMPANY: FACILITY"
   const colonIdx = facilityName.indexOf(':');
   if (colonIdx > 2) {
     const potentialCompany = facilityName.substring(0, colonIdx).trim();
-    // Only use if the left side is a recognizable company name
     const normalized = normalizeCompanyName(potentialCompany);
     if (normalized !== cleanCompanyName(potentialCompany)) return normalized;
   }
 
-  // 4. Hash/number pattern: "COMPANY NAME #123" or "COMPANY #123 LOCATION"
+  // 6. Hash/number pattern: "COMPANY NAME #123" or "COMPANY #123 LOCATION"
   const hashMatch = facilityName.match(/^(.+?)\s+#\d+/i);
   if (hashMatch) {
     const potentialCompany = hashMatch[1].trim();
     const normalized = normalizeCompanyName(potentialCompany);
     if (normalized !== cleanCompanyName(potentialCompany)) return normalized;
+    if (hasCorporateStructure(potentialCompany)) return cleanCompanyName(potentialCompany);
   }
 
-  // 5. "COMPANY CITY PLANT" / "COMPANY LOCATION FACILITY" patterns
-  //    Only match if removing trailing location+facility words yields a known company
+  // 7. "COMPANY CITY PLANT" / "COMPANY LOCATION FACILITY" patterns
   const facilityTrailers = /\s+(?:PLANT|FACILITY|FACTORY|WORKS|MILL|MINE|QUARRY|PIT|TERMINAL|WAREHOUSE|DIST(?:RIBUTION)?\s+CENTER|SHOP|YARD|DEPOT|STATION|REFINERY|SMELTER|FOUNDRY|FORGE|DIVISION|DIV)\s*(?:#?\d+)?$/i;
   const stripped = facilityName.replace(facilityTrailers, '').trim();
   if (stripped !== facilityName) {
@@ -481,17 +684,30 @@ export function extractCompanyFromFacilityName(facilityName: string): string | n
       const normalized = normalizeCompanyName(withoutCity);
       if (normalized !== cleanCompanyName(withoutCity)) return normalized;
     }
-    // Also try the stripped version directly (no city removal)
     const normalizedDirect = normalizeCompanyName(stripped);
     if (normalizedDirect !== cleanCompanyName(stripped)) return normalizedDirect;
   }
 
-  // 6. Hyphenated pattern: "COMPANY-DIVISION" (but not single-letter hyphens like "A-1")
+  // 8. Hyphenated pattern: "COMPANY-DIVISION"
   const hyphenMatch = facilityName.match(/^([A-Z][A-Za-z]{2,}(?:\s+[A-Za-z]+)*)-([A-Z][A-Za-z]{2,}.*)$/);
   if (hyphenMatch) {
     const potentialCompany = hyphenMatch[1].trim();
     const normalized = normalizeCompanyName(potentialCompany);
     if (normalized !== cleanCompanyName(potentialCompany)) return normalized;
+  }
+
+  // 9. GENERIC CORPORATE NAME EXTRACTION
+  //    If the facility name contains corporate suffixes (INC, LLC, CORP, etc.),
+  //    the cleaned name is likely a valid company name.
+  if (hasCorporateStructure(facilityName)) {
+    return cleanCompanyName(facilityName);
+  }
+
+  // 10. Multi-word names ending in recognizable industry terms are likely companies
+  //     e.g. "HORIZON STEEL", "PARTS FINISHING GROUP", "SUMMIT MARINE"
+  const industryTerms = /\b(?:STEEL|METALS?|IRON|ALUMINUM|PLASTICS?|RUBBER|GLASS|CHEMICAL|LUMBER|TIMBER|CONCRETE|CEMENT|ASPHALT|PAVING|ROOFING|INSULATION|PACKAGING|PRINTING|MACHINING|WELDING|FOUNDRY|FABRICAT\w*|TOOL|DIE|MOLD|STAMPING|CASTING|FORGING|PLATING|COATING|FINISHING|ASSEMBLY|MANUFACTURING|MFG|PRODUCTS?|TECHNOLOGIES|SOLUTIONS|SYSTEMS|SERVICES|SUPPLY|SUPPLIES|COMPONENTS?|PARTS|EQUIPMENT|MACHINERY|ELECTRONICS?|AEROSPACE|AUTOMOTIVE|MARINE|AVIATION|DEFENSE|ENERGY|POWER|SOLAR)\s*$/i;
+  if (industryTerms.test(facilityName) && facilityName.split(/\s+/).length >= 2) {
+    return cleanCompanyName(facilityName);
   }
 
   return null;
