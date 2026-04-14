@@ -14,7 +14,7 @@ const INITIAL_FACILITIES_SHOWN = 20;
 
 const STATUS_CONFIG = {
   verified: { label: 'Verified', color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20', icon: ShieldCheck },
-  unverified: { label: 'Unverified', color: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/20', icon: AlertCircle },
+  unverified: { label: 'Needs Review', color: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/20', icon: AlertCircle },
   rejected: { label: 'Rejected', color: 'text-red-400', bg: 'bg-red-500/10', border: 'border-red-500/20', icon: Ban },
 } as const;
 
@@ -77,9 +77,9 @@ export default function CompanyDetail() {
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <h2 className="text-xl font-semibold text-fg-default">{company.name}</h2>
-              <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-medium ${statusCfg.bg} ${statusCfg.border} border ${statusCfg.color}`}>
-                <StatusIcon className="w-2.5 h-2.5" />
-                {statusCfg.label}
+              <span className="relative group/tip flex-shrink-0">
+                <StatusIcon className={`w-4 h-4 ${statusCfg.color}`} />
+                <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 px-2 py-1 text-[10px] text-fg-default bg-bg-elevated border border-border-subtle rounded-md whitespace-nowrap opacity-0 pointer-events-none group-hover/tip:opacity-100 transition-opacity z-10">{statusCfg.label}</span>
               </span>
             </div>
             <div className="flex items-center gap-3 mt-1 flex-wrap">

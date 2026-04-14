@@ -6,7 +6,7 @@ import { DATA_SOURCES } from '@shared/types';
 import { US_STATES } from '@shared/states';
 import {
   Database, Factory, Building2, GitCompare, ArrowRight,
-  ChevronDown, ChevronUp, CheckCircle2, AlertCircle, Loader2,
+  ChevronDown, ChevronUp, CheckCircle2, Loader2, Download,
   LayoutDashboard, MapPin, Boxes, BarChart3,
 } from 'lucide-react';
 
@@ -142,7 +142,6 @@ function DashboardTab() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
           {Object.values(DATA_SOURCES).filter(s => s.key !== 'manual').map(source => {
             const recordCount = stats?.bySource[source.key] ?? 0;
-            const isV2 = false;
             const isSynced = !isLoading && recordCount > 0;
             const isSyncing = pipelineStatus?.running && pipelineStatus.currentSource === source.key;
             return (
@@ -150,8 +149,6 @@ function DashboardTab() {
                 <div className="flex items-center gap-3 mb-2">
                   <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: source.color }} />
                   <span className="text-sm font-medium text-fg-default">{source.name}</span>
-                  <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">Federal</span>
-                  {isV2 && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-white/5 text-fg-soft border border-white/10">V2</span>}
                 </div>
                 <p className="text-xs text-fg-soft line-clamp-2">{source.description}</p>
                 {isSyncing ? (
@@ -161,23 +158,21 @@ function DashboardTab() {
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-[10px] text-fg-soft truncate">{pipelineStatus?.stageLabel ?? 'Starting...'}</span>
-                      <span className="flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                        <Loader2 className="w-3 h-3 animate-spin" /> Syncing
-                      </span>
+                      <Loader2 className="w-3.5 h-3.5 text-emerald-400 animate-spin flex-shrink-0" />
                     </div>
                   </div>
                 ) : (
                   <div className="mt-3 flex items-center justify-between">
                     <span className="text-xs text-fg-muted">{isLoading ? '...' : `${recordCount.toLocaleString()} records`}</span>
-                    {isV2 ? (
-                      <span className="text-[10px] text-fg-soft">Coming Soon</span>
-                    ) : isSynced ? (
-                      <span className="flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                        <CheckCircle2 className="w-3 h-3" /> Synced
+                    {isSynced ? (
+                      <span className="relative group/tip">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                        <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 px-2 py-1 text-[10px] text-fg-default bg-bg-elevated border border-border-subtle rounded-md whitespace-nowrap opacity-0 pointer-events-none group-hover/tip:opacity-100 transition-opacity z-10">Synced</span>
                       </span>
                     ) : (
-                      <span className="flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20">
-                        <AlertCircle className="w-3 h-3" /> Update Ready
+                      <span className="relative group/tip">
+                        <Download className="w-4 h-4 text-amber-400" />
+                        <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 px-2 py-1 text-[10px] text-fg-default bg-bg-elevated border border-border-subtle rounded-md whitespace-nowrap opacity-0 pointer-events-none group-hover/tip:opacity-100 transition-opacity z-10">Update Ready</span>
                       </span>
                     )}
                   </div>

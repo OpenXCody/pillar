@@ -20,7 +20,7 @@ const STATUS_CONFIG: Record<CompanyStatus, { label: string; color: string; bg: s
     icon: ShieldCheck,
   },
   unverified: {
-    label: 'Unverified',
+    label: 'Needs Review',
     color: 'text-amber-400',
     bg: 'bg-amber-500/10',
     border: 'border-amber-500/20',
@@ -192,13 +192,10 @@ export default function Companies() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <h3 className="text-sm font-medium text-fg-default truncate">{c.name}</h3>
-                      {/* Status badge */}
-                      <span className={`
-                        inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-medium flex-shrink-0
-                        ${statusCfg.bg} ${statusCfg.border} border ${statusCfg.color}
-                      `}>
-                        <StatusIcon className="w-2.5 h-2.5" />
-                        {statusCfg.label}
+                      {/* Status icon with tooltip */}
+                      <span className="relative group/tip flex-shrink-0">
+                        <StatusIcon className={`w-3.5 h-3.5 ${statusCfg.color}`} />
+                        <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 px-2 py-1 text-[10px] text-fg-default bg-bg-elevated border border-border-subtle rounded-md whitespace-nowrap opacity-0 pointer-events-none group-hover/tip:opacity-100 transition-opacity z-10">{statusCfg.label}</span>
                       </span>
                     </div>
                     <div className="flex items-center gap-2 mt-1">

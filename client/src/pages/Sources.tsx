@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { sourcesApi, pipelineApi } from '@/lib/api';
 import { DATA_SOURCES } from '@shared/types';
-import { Clock, CheckCircle2, XCircle, Loader2, Shield, AlertCircle, Plane, BarChart3 } from 'lucide-react';
+import { Clock, CheckCircle2, XCircle, Loader2, AlertCircle } from 'lucide-react';
 
 function formatCST(dateStr: string): string {
   const d = new Date(dateStr);
@@ -84,7 +84,6 @@ export default function Sources() {
 
       {/* Environmental Sources */}
       <SourceGroup
-        icon={<Shield className="w-4 h-4 text-indigo-400" />}
         title="Environmental & Compliance"
         badge={{ label: 'Federal', className: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20' }}
         sources={envSources}
@@ -98,7 +97,6 @@ export default function Sources() {
 
       {/* Industry-Specific Sources */}
       <SourceGroup
-        icon={<Plane className="w-4 h-4 text-sky-400" />}
         title="Industry & Transportation"
         badge={{ label: 'Federal', className: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20' }}
         sources={industrySources}
@@ -112,7 +110,6 @@ export default function Sources() {
 
       {/* Statistical / Economic Sources */}
       <SourceGroup
-        icon={<BarChart3 className="w-4 h-4 text-pink-400" />}
         title="Statistical & Economic"
         badge={{ label: 'Federal', className: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20' }}
         sources={statisticalSources}
@@ -126,9 +123,8 @@ export default function Sources() {
 
       {/* Workforce & Safety Sources */}
       <SourceGroup
-        icon={<Shield className="w-4 h-4 text-amber-400" />}
         title="Workforce & Safety"
-        badge={{ label: 'Federal', className: 'bg-emerald-500/10 text-emerald-400/80 border-emerald-500/20' }}
+        badge={{ label: 'Federal', className: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20' }}
         sources={v2Sources}
         activeSources={activeSources}
         data={data}
@@ -169,8 +165,7 @@ export default function Sources() {
 }
 
 /** Reusable source group component */
-function SourceGroup({ icon, title, badge, sources, activeSources, data, isLoading, isPipelineRunning, pipelineStatus, fetchMutation }: {
-  icon: React.ReactNode;
+function SourceGroup({ title, badge, sources, activeSources, data, isLoading, isPipelineRunning, pipelineStatus, fetchMutation }: {
   title: string;
   badge: { label: string; className: string };
   sources: (typeof DATA_SOURCES)[keyof typeof DATA_SOURCES][];
@@ -180,14 +175,10 @@ function SourceGroup({ icon, title, badge, sources, activeSources, data, isLoadi
   isPipelineRunning: boolean;
   pipelineStatus: { running: boolean; currentSource: string | null; stageProgress: number; stageLabel: string | null; elapsedMs: number | null } | undefined;
   fetchMutation: { mutate: (source: string) => void };
-
 }) {
   return (
     <div>
-      <div className="flex items-center gap-2 mb-2">
-        {icon}
-        <h3 className="text-sm font-medium text-fg-muted">{title}</h3>
-      </div>
+      <h3 className="text-sm font-medium text-fg-muted mb-2">{title}</h3>
       <div className="space-y-2">
         {sources.map(source => {
           const info = data?.sources.find(s => s.key === source.key);
@@ -195,7 +186,6 @@ function SourceGroup({ icon, title, badge, sources, activeSources, data, isLoadi
           const recordCount = info?.rawRecordCount ?? 0;
           const isSyncing = isPipelineRunning && pipelineStatus?.currentSource === source.key;
           const isActive = activeSources.includes(source.key);
-          const isV2 = false;
           const isSynced = recordCount > 0 && lastRun?.status === 'completed';
 
           return (
@@ -207,9 +197,6 @@ function SourceGroup({ icon, title, badge, sources, activeSources, data, isLoadi
                     <div className="flex items-center gap-2">
                       <h3 className="text-sm font-medium text-fg-default">{source.name}</h3>
                       <span className={`text-[10px] px-1.5 py-0.5 rounded-full border ${badge.className}`}>{badge.label}</span>
-                      {isV2 && (
-                        <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-white/5 text-fg-soft border border-white/10">V2</span>
-                      )}
                     </div>
                     <p className="text-xs text-fg-soft mt-0.5">{source.description}</p>
                   </div>
@@ -247,6 +234,7 @@ function SourceGroup({ icon, title, badge, sources, activeSources, data, isLoadi
                 )}
               </div>
 
+              {/* Metadata row */}
               <div className="mt-2.5 flex items-center gap-6 text-xs text-fg-muted">
                 <span>{isLoading ? '...' : `${recordCount.toLocaleString()} records`}</span>
                 {lastRun && (
@@ -266,9 +254,32 @@ function SourceGroup({ icon, title, badge, sources, activeSources, data, isLoadi
                     )}
                   </>
                 )}
-                {!lastRun && !isV2 && <span className="text-fg-soft">Never synced</span>}
-                {isV2 && <span className="text-fg-soft">Not yet integrated</span>}
+                {!lastRun && <span className="text-fg-soft">Never synced</span>}
               </div>
+
+              {/* Sync results summary */}
+              {lastRun && lastRun.status === 'completed' && lastRun.totalFetched > 0 && (
+                <div className="mt-2.5 pt-2.5 border-t border-white/5">
+                  <div className="grid grid-cols-4 gap-2 text-center">
+                    <div>
+                      <div className="text-sm font-semibold text-fg-default">{lastRun.totalFetched.toLocaleString()}</div>
+                      <div className="text-[10px] text-fg-soft">Fetched</div>
+                    </div>
+                    <div>
+                      <div className="text-sm font-semibold text-fg-default">{lastRun.newRecords.toLocaleString()}</div>
+                      <div className="text-[10px] text-fg-soft">New</div>
+                    </div>
+                    <div>
+                      <div className="text-sm font-semibold text-fg-default">{lastRun.matchesFound.toLocaleString()}</div>
+                      <div className="text-[10px] text-fg-soft">Matches</div>
+                    </div>
+                    <div>
+                      <div className="text-sm font-semibold text-fg-default">{lastRun.goldenRecordsCreated.toLocaleString()}</div>
+                      <div className="text-[10px] text-fg-soft">Golden</div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           );
         })}

@@ -413,7 +413,6 @@ export default function FacilityDetail() {
         {facility.facilitySources && facility.facilitySources.length > 0 ? (
           <div className="space-y-3">
             {facility.facilitySources.map((fs, idx) => {
-              const sourceInfo = DATA_SOURCES[fs.source];
               const badge = getSourceBadge(fs.source, fs.sourceRecordId);
               const displayName = getSourceDisplayName(fs.source, fs.sourceRecordId);
               const isFederal = ['epa_echo', 'epa_tri', 'osha', 'usda_fsis', 'faa', 'nhtsa'].includes(fs.source);
@@ -423,7 +422,7 @@ export default function FacilityDetail() {
                 <div key={idx} className="flex items-start gap-3">
                   <div
                     className="w-2.5 h-2.5 rounded-full mt-1 flex-shrink-0"
-                    style={{ backgroundColor: sourceInfo?.color ?? (fs.source === 'manual' && !isHumanEdit ? '#6B7280' : sourceInfo?.color ?? '#6B7280') }}
+                    style={{ backgroundColor: '#666666' }}
                   />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
@@ -458,14 +457,13 @@ export default function FacilityDetail() {
         ) : (
           <div className="space-y-2">
             {facility.sources.map((source) => {
-              const sourceInfo = DATA_SOURCES[source];
               const badge = getSourceBadge(source, null);
               const displayName = getSourceDisplayName(source, null);
               return (
                 <div key={source} className="flex items-center gap-2">
                   <div
                     className="w-2.5 h-2.5 rounded-full flex-shrink-0"
-                    style={{ backgroundColor: sourceInfo?.color ?? '#6B7280' }}
+                    style={{ backgroundColor: '#666666' }}
                   />
                   <span className="text-sm text-fg-default">{displayName}</span>
                   <span className={`text-[10px] px-1.5 py-0.5 rounded-full border ${badge.className}`}>
@@ -565,11 +563,14 @@ function ConfidenceBreakdown({ facility }: { facility: import('@shared/types').F
         </div>
       </div>
 
-      {/* Main progress bar */}
+      {/* Main progress bar — progressive red → orange → green */}
       <div className="h-2.5 bg-white/5 rounded-full overflow-hidden mb-4">
         <div
-          className={`h-full rounded-full transition-all duration-500 ${colorClasses.bar}`}
-          style={{ width: `${(totalEarned / totalPossible) * 100}%` }}
+          className="h-full rounded-full transition-all duration-500"
+          style={{
+            width: `${(totalEarned / totalPossible) * 100}%`,
+            background: 'linear-gradient(to right, #ef4444, #f59e0b 50%, #22c55e)',
+          }}
         />
       </div>
 
