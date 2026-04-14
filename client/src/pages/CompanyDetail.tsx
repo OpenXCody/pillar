@@ -41,6 +41,15 @@ export default function CompanyDetail() {
   const statusCfg = STATUS_CONFIG[company.status || 'unverified'];
   const StatusIcon = statusCfg.icon;
 
+  // Parse ticker info from nameVariants JSON
+  let tickerInfo: { ticker?: string; exchange?: string; cik?: string } | null = null;
+  try {
+    if (company.nameVariants) {
+      const parsed = typeof company.nameVariants === 'string' ? JSON.parse(company.nameVariants) : company.nameVariants;
+      if (parsed?.ticker) tickerInfo = parsed;
+    }
+  } catch { /* ignore parse errors */ }
+
   const visibleStates = showAllStates
     ? company.stateBreakdown
     : company.stateBreakdown.slice(0, INITIAL_STATES_SHOWN);
@@ -73,13 +82,18 @@ export default function CompanyDetail() {
                 {statusCfg.label}
               </span>
             </div>
-            <div className="flex items-center gap-3 mt-1">
+            <div className="flex items-center gap-3 mt-1 flex-wrap">
               <span className="flex items-center gap-1 text-xs text-fg-muted">
                 <Factory className="w-3 h-3 text-sky-400" />
                 {company.facilityCount} {company.facilityCount === 1 ? 'factory' : 'factories'}
               </span>
               {company.sector && (
                 <span className="text-xs text-fg-soft">{company.sector}</span>
+              )}
+              {tickerInfo && (
+                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-indigo-500/10 border border-indigo-500/20 text-[10px] font-mono font-medium text-indigo-400">
+                  {tickerInfo.exchange}:{tickerInfo.ticker}
+                </span>
               )}
             </div>
           </div>

@@ -201,7 +201,20 @@ export default function Companies() {
                         {statusCfg.label}
                       </span>
                     </div>
-                    <p className="text-xs text-fg-muted mt-1 truncate">{c.sector || 'Manufacturing'}</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-xs text-fg-muted truncate">{c.sector || 'Manufacturing'}</span>
+                      {(() => {
+                        try {
+                          const nv = c.nameVariants ? (typeof c.nameVariants === 'string' ? JSON.parse(c.nameVariants) : c.nameVariants) : null;
+                          if (nv?.ticker) return (
+                            <span className="text-[10px] font-mono text-indigo-400 bg-indigo-500/10 px-1 py-0.5 rounded flex-shrink-0">
+                              {nv.ticker}
+                            </span>
+                          );
+                        } catch { /* ignore */ }
+                        return null;
+                      })()}
+                    </div>
                   </div>
 
                   {/* Factory count */}
