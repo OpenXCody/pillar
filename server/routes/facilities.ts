@@ -2,20 +2,59 @@ import { Router } from 'express';
 import { db } from '../db/index.js';
 import { facilities, facilitySources, rawRecords } from '../db/schema.js';
 import { sql, eq, ilike, and, count, desc } from 'drizzle-orm';
+import { INDUSTRY_CATEGORIES } from '@shared/naics.js';
 
 export const facilitiesRouter = Router();
+
+/**
+ * Resolve a NAICS filter value — could be a category key (e.g. "aerospace"),
+ * a category label (e.g. "Aerospace & Defense"), or a raw NAICS prefix (e.g. "3364").
+ * Returns an array of NAICS prefixes to match with OR.
+ */
+function resolveNaicsPrefixes(value: string): string[] {
+  const v = value.trim();
+  // Check if it's a category key
+  const byKey = INDUSTRY_CATEGORIES.find(c => c.key === v);
+  if (byKey) return byKey.naicsPrefixes;
+  // Check if it's a category label (case-insensitive)
+  const byLabel = INDUSTRY_CATEGORIES.find(c => c.label.toLowerCase() === v.toLowerCase());
+  if (byLabel) return byLabel.naicsPrefixes;
+  // Otherwise treat as a raw NAICS prefix
+  return [v];
+}
 
 /** Build filter conditions from query params (shared between list + count) */
 function buildFacilityFilters(query: Record<string, any>) {
   const { search, state, naics, company, minSources } = query;
   const conditions = [];
+
   if (search) {
-    conditions.push(
-      sql`(${ilike(facilities.name, `%${search}%`)} OR ${ilike(facilities.companyName, `%${search}%`)})`
+    const searchStr = String(search).trim();
+    // Check if the search matches a category label
+    const categoryMatch = INDUSTRY_CATEGORIES.find(c =>
+      c.label.toLowerCase() === searchStr.toLowerCase() ||
+      c.key === searchStr.toLowerCase()
     );
+    if (categoryMatch) {
+      // Search is a category — filter by all its NAICS prefixes
+      const prefixConds = categoryMatch.naicsPrefixes.map(p => sql`${facilities.primaryNaics} LIKE ${p + '%'}`);
+      conditions.push(sql`(${sql.join(prefixConds, sql` OR `)})`);
+    } else {
+      conditions.push(
+        sql`(${ilike(facilities.name, `%${searchStr}%`)} OR ${ilike(facilities.companyName, `%${searchStr}%`)})`
+      );
+    }
   }
   if (state) conditions.push(eq(facilities.state, String(state)));
-  if (naics) conditions.push(sql`${facilities.primaryNaics} LIKE ${String(naics) + '%'}`);
+  if (naics) {
+    const prefixes = resolveNaicsPrefixes(String(naics));
+    if (prefixes.length === 1) {
+      conditions.push(sql`${facilities.primaryNaics} LIKE ${prefixes[0] + '%'}`);
+    } else {
+      const prefixConds = prefixes.map(p => sql`${facilities.primaryNaics} LIKE ${p + '%'}`);
+      conditions.push(sql`(${sql.join(prefixConds, sql` OR `)})`);
+    }
+  }
   if (company) conditions.push(ilike(facilities.companyName, `%${company}%`));
   if (minSources && Number(minSources) > 1) {
     conditions.push(sql`${facilities.sourceCount} >= ${Number(minSources)}`);

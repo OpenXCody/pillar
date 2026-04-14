@@ -14,13 +14,14 @@ import {
   Loader2,
 } from 'lucide-react';
 import { facilitiesApi, companiesApi } from '@/lib/api';
+import { INDUSTRY_CATEGORIES } from '@shared/naics';
 
 interface GlobalSearchProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-type SearchEntityType = 'facilities' | 'companies';
+type SearchEntityType = 'facilities' | 'companies' | 'categories';
 
 interface SearchResultItem {
   id: string;
@@ -43,6 +44,11 @@ const ENTITY_CONFIG: Record<
     icon: Building2,
     label: 'Company',
     iconClass: 'text-amber-500',
+  },
+  categories: {
+    icon: Layers,
+    label: 'Category',
+    iconClass: 'text-indigo-400',
   },
 };
 
@@ -103,10 +109,30 @@ export default function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
 
   const isLoading = facilitiesLoading || companiesLoading;
 
+  // Match industry categories client-side (instant, no API call)
+  const categoryMatches = useMemo(() => {
+    if (debouncedQuery.length < 2) return [];
+    const q = debouncedQuery.toLowerCase();
+    return INDUSTRY_CATEGORIES.filter(c =>
+      c.label.toLowerCase().includes(q) || c.key.includes(q)
+    ).slice(0, 3);
+  }, [debouncedQuery]);
+
   const flatResults = useMemo((): SearchResultItem[] => {
     const items: SearchResultItem[] = [];
 
-    // Companies first (fewer, higher signal)
+    // Categories first (instant match)
+    for (const cat of categoryMatches) {
+      items.push({
+        id: `cat_${cat.key}`,
+        type: 'categories',
+        name: cat.label,
+        subtitle: `${cat.naicsPrefixes.length} NAICS groups`,
+        meta: null,
+      });
+    }
+
+    // Companies next (fewer, higher signal)
     if (companyResults?.data) {
       for (const c of companyResults.data) {
         items.push({
@@ -133,7 +159,7 @@ export default function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
     }
 
     return items;
-  }, [facilityResults, companyResults]);
+  }, [facilityResults, companyResults, categoryMatches]);
 
   const saveRecentSearch = useCallback((searchQuery: string) => {
     if (!searchQuery.trim()) return;
@@ -161,7 +187,10 @@ export default function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
   const navigateToResult = useCallback((item: SearchResultItem) => {
     saveRecentSearch(query);
     onClose();
-    if (item.type === 'companies') {
+    if (item.type === 'categories') {
+      const catKey = item.id.replace('cat_', '');
+      navigate(`/facilities?naics=${catKey}`);
+    } else if (item.type === 'companies') {
       navigate(`/companies/${item.id}`);
     } else {
       navigate(`/facilities/${item.id}`);
@@ -205,6 +234,7 @@ export default function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
   const showNoResults = hasQuery && !isLoading && !hasResults;
 
   // Group results by type for section headers
+  const categoryCount = flatResults.filter(r => r.type === 'categories').length;
   const companyCount = flatResults.filter(r => r.type === 'companies').length;
   const facilityCount = flatResults.filter(r => r.type === 'facilities').length;
 
@@ -288,6 +318,40 @@ export default function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
             {/* Results */}
             {hasQuery && hasResults && (
               <div className="py-2">
+                {/* Categories section */}
+                {categoryCount > 0 && (
+                  <div className="px-4 py-2">
+                    <h4 className="text-xs font-medium text-fg-soft uppercase tracking-wider mb-2">
+                      Categories <span className="ml-1 text-fg-soft/50">{categoryCount}</span>
+                    </h4>
+                    <div className="space-y-1">
+                      {flatResults.filter(r => r.type === 'categories').map((item) => {
+                        const idx = resultIndex++;
+                        const isSelected = idx === selectedIndex;
+                        const config = ENTITY_CONFIG[item.type];
+                        const Icon = config.icon;
+                        return (
+                          <div
+                            key={`cat-${item.id}`}
+                            className={`flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer ${isSelected ? 'bg-white/10' : 'hover:bg-white/5'}`}
+                            onClick={() => navigateToResult(item)}
+                            onMouseEnter={() => setSelectedIndex(idx)}
+                          >
+                            <Icon className={`w-4 h-4 flex-shrink-0 ${config.iconClass}`} />
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm text-fg-default">{item.name}</p>
+                              {item.subtitle && <p className="text-xs text-fg-soft">{item.subtitle}</p>}
+                            </div>
+                            <span className="text-xs px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+                              {config.label}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
                 {/* Companies section */}
                 {companyCount > 0 && (
                   <div className="px-4 py-2">

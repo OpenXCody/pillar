@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { db } from '../db/index.js';
 import { companies, facilities } from '../db/schema.js';
 import { eq, ilike, and, desc, sql, count } from 'drizzle-orm';
+import { INDUSTRY_CATEGORIES } from '@shared/naics.js';
 
 export const companiesRouter = Router();
 
@@ -12,7 +13,20 @@ companiesRouter.get('/', async (req, res) => {
 
     const conditions = [];
     if (search) {
-      conditions.push(ilike(companies.name, `%${search}%`));
+      const searchStr = String(search).trim();
+      // Check if search matches a category label or key
+      const categoryMatch = INDUSTRY_CATEGORIES.find(c =>
+        c.label.toLowerCase() === searchStr.toLowerCase() ||
+        c.key === searchStr.toLowerCase() ||
+        c.label.toLowerCase().includes(searchStr.toLowerCase())
+      );
+      if (categoryMatch) {
+        // Search by sector (which stores category labels)
+        conditions.push(ilike(companies.sector, `%${categoryMatch.label}%`));
+      } else {
+        // Search by name or sector
+        conditions.push(sql`(${ilike(companies.name, `%${searchStr}%`)} OR ${ilike(companies.sector, `%${searchStr}%`)})`);
+      }
     }
     // Filter by status (default: show only verified)
     if (status && ['unverified', 'verified', 'rejected'].includes(String(status))) {

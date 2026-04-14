@@ -150,7 +150,7 @@ export default function Export() {
           />
 
           <SearchableSelect
-            options={INDUSTRY_CATEGORIES.map(c => ({ value: c.naicsPrefixes[0], label: c.label }))}
+            options={INDUSTRY_CATEGORIES.map(c => ({ value: c.key, label: c.label }))}
             value={filters.naicsPrefix}
             onChange={v => setFilters(f => ({ ...f, naicsPrefix: v }))}
             placeholder="Category"
@@ -207,7 +207,7 @@ export default function Export() {
             ))}
             {filters.naicsPrefix && (
               <span className="px-2 py-0.5 bg-white/5 text-fg-muted text-xs rounded flex items-center gap-1 border border-white/10">
-                {INDUSTRY_CATEGORIES.find(c => c.naicsPrefixes[0] === filters.naicsPrefix)?.label || filters.naicsPrefix}
+                {INDUSTRY_CATEGORIES.find(c => c.key === filters.naicsPrefix)?.label || filters.naicsPrefix}
                 <button onClick={() => setFilters(f => ({ ...f, naicsPrefix: '' }))} className="hover:text-fg-default">&times;</button>
               </span>
             )}

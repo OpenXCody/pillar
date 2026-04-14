@@ -108,7 +108,7 @@ export default function Facilities() {
         />
 
         <SearchableSelect
-          options={INDUSTRY_CATEGORIES.map(c => ({ value: c.naicsPrefixes[0], label: c.label }))}
+          options={INDUSTRY_CATEGORIES.map(c => ({ value: c.key, label: c.label }))}
           value={naicsFilter}
           onChange={v => setFilter('naics', v)}
           placeholder="Filter by category..."
