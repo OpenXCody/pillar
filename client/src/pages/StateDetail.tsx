@@ -90,24 +90,23 @@ export default function StateDetail() {
                 <div
                   key={naics.code ?? 'unknown'}
                   onClick={() => navigate(`/facilities?state=${state.code}&naics=${naics.code ?? ''}`)}
-                  className="flex items-center gap-3 cursor-pointer hover:bg-white/[0.03] rounded-lg px-1 py-0.5 -mx-1 transition-colors group"
+                  className="flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-white/[0.02] transition-colors"
                 >
-                  <span className="text-[11px] font-mono text-fg-muted w-14 flex-shrink-0 group-hover:text-indigo-400 transition-colors">
-                    {naics.code ?? '--'}
-                  </span>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-0.5">
-                      <span className="text-xs text-fg-default truncate">{naics.description ?? 'Unknown'}</span>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-sm font-medium text-fg-default truncate">{naics.description ?? 'Unknown'}</span>
                       <span className="text-[10px] text-fg-soft flex-shrink-0">{globalPct}%</span>
                     </div>
-                    <div className="h-4 bg-white/[0.03] rounded-full overflow-hidden">
+                    <div className="h-1.5 bg-white/[0.03] rounded-full overflow-hidden">
                       <div
-                        className="h-full rounded-full transition-all duration-500 group-hover:opacity-80"
+                        className="h-full rounded-full transition-all duration-500"
                         style={{ width: `${pct}%`, backgroundColor: 'rgba(99, 102, 241, 0.35)' }}
                       />
                     </div>
                   </div>
-                  <span className="text-xs text-fg-muted w-14 text-right font-mono flex-shrink-0">{naics.count.toLocaleString()}</span>
+                  <div className="text-right shrink-0">
+                    <div className="text-sm font-semibold text-fg-default">{naics.count.toLocaleString()}</div>
+                  </div>
                 </div>
               );
             })}

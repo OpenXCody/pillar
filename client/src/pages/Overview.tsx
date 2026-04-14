@@ -192,12 +192,14 @@ function DashboardTab() {
               const maxCount = stats.byState[0].count;
               const pct = maxCount > 0 ? (count / maxCount) * 100 : 0;
               return (
-                <div key={state} onClick={() => navigate(`/states/${state}`)} className="flex items-center gap-3 cursor-pointer hover:bg-white/[0.03] rounded-lg px-1 py-0.5 -mx-1 transition-colors group">
-                  <span className="text-xs text-fg-muted w-6 font-mono group-hover:text-indigo-400 transition-colors">{state}</span>
-                  <div className="flex-1 h-5 bg-white/[0.03] rounded-full overflow-hidden">
-                    <div className="h-full rounded-full transition-all duration-500 group-hover:opacity-80" style={{ width: `${pct}%`, backgroundColor: 'rgba(99, 102, 241, 0.3)' }} />
+                <div key={state} onClick={() => navigate(`/states/${state}`)} className="flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-white/[0.02] transition-colors">
+                  <span className="text-xs text-fg-muted w-6 font-mono">{state}</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="h-1.5 bg-white/[0.03] rounded-full overflow-hidden">
+                      <div className="h-full rounded-full transition-all duration-500" style={{ width: `${pct}%`, backgroundColor: 'rgba(99, 102, 241, 0.35)' }} />
+                    </div>
                   </div>
-                  <span className="text-xs text-fg-muted w-16 text-right font-mono">{count.toLocaleString()}</span>
+                  <span className="text-sm font-semibold text-fg-default w-16 text-right">{count.toLocaleString()}</span>
                 </div>
               );
             })}
@@ -393,7 +395,7 @@ function IndustriesTab() {
           })}
         </div>
       ) : view === 'subsectors' ? (
-        /* Subsector view */
+        /* Subsector view — same layout as Categories, no code prefix */
         <div className="bg-white/[0.02] backdrop-blur-sm border border-white/5 rounded-xl divide-y divide-white/5">
           {subsectors.map(sub => {
             const isExpanded = expandedSubsector === sub.subsector;
@@ -406,7 +408,6 @@ function IndustriesTab() {
                   onClick={() => setExpandedSubsector(isExpanded ? null : sub.subsector)}
                   className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-white/[0.02] transition-colors"
                 >
-                  <span className="text-xs font-mono text-fg-soft w-8">{sub.subsector}</span>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
                       <span className="text-sm font-medium text-fg-default truncate">
@@ -429,7 +430,6 @@ function IndustriesTab() {
                   <ChevronDown className={`w-3.5 h-3.5 text-fg-soft transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
                 </div>
 
-                {/* Expanded: show detailed industries within this subsector */}
                 {isExpanded && subIndustries.length > 0 && (
                   <div className="bg-white/[0.01] border-t border-white/5 px-4 py-2 space-y-1">
                     {subIndustries.slice(0, 20).map(ind => (
@@ -455,34 +455,39 @@ function IndustriesTab() {
           })}
         </div>
       ) : (
-        /* Detailed view — all industries */
-        <div className="bg-white/[0.02] backdrop-blur-sm border border-white/5 rounded-xl p-4 space-y-1.5">
-          {industries.slice(0, 50).map(ind => {
-            const maxIndustryCount = industries[0]?.facilityCount ?? 1;
-            const barPct = maxIndustryCount > 0 ? (ind.facilityCount / maxIndustryCount) * 100 : 0;
-            return (
-              <div
-                key={ind.code}
-                onClick={() => navigate(`/facilities?naics=${ind.code}`)}
-                className="flex items-center gap-3 py-1.5 px-2 -mx-2 rounded-lg hover:bg-white/[0.03] cursor-pointer transition-colors group"
-              >
-                <span className="text-xs font-mono text-fg-soft w-14 group-hover:text-indigo-400 transition-colors">{ind.code}</span>
-                <div className="flex-1 min-w-0">
-                  <div className="text-xs text-fg-muted truncate mb-0.5">{ind.description}</div>
-                  <div className="h-1 bg-white/[0.03] rounded-full overflow-hidden">
-                    <div className="h-full rounded-full" style={{ width: `${barPct}%`, backgroundColor: 'rgba(99, 102, 241, 0.3)' }} />
+        /* All Industries view — matches Categories layout, filters out blank codes */
+        <div className="bg-white/[0.02] backdrop-blur-sm border border-white/5 rounded-xl divide-y divide-white/5">
+          {industries
+            .filter(ind => ind.code && ind.code.length >= 4 && ind.description)
+            .slice(0, 50)
+            .map(ind => {
+              const maxIndustryCount = industries[0]?.facilityCount ?? 1;
+              const barPct = maxIndustryCount > 0 ? (ind.facilityCount / maxIndustryCount) * 100 : 0;
+              return (
+                <div
+                  key={ind.code}
+                  onClick={() => navigate(`/facilities?naics=${ind.code}`)}
+                  className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-white/[0.02] transition-colors"
+                >
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-sm font-medium text-fg-default truncate">{ind.description}</span>
+                      <span className="text-[10px] font-mono text-fg-soft">{ind.code}</span>
+                    </div>
+                    <div className="h-1.5 bg-white/[0.03] rounded-full overflow-hidden">
+                      <div className="h-full rounded-full" style={{ width: `${barPct}%`, backgroundColor: 'rgba(99, 102, 241, 0.35)' }} />
+                    </div>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <div className="text-sm font-semibold text-fg-default">{ind.facilityCount.toLocaleString()}</div>
+                    <div className="text-[10px] text-fg-soft">{ind.companyCount.toLocaleString()} cos</div>
                   </div>
                 </div>
-                <div className="text-right shrink-0">
-                  <span className="text-xs font-medium text-fg-default">{ind.facilityCount.toLocaleString()}</span>
-                  <span className="text-[10px] text-fg-soft ml-1">factories</span>
-                </div>
-              </div>
-            );
-          })}
-          {industries.length > 50 && (
-            <div className="text-xs text-fg-soft text-center pt-2">
-              Showing top 50 of {industries.length} industry codes
+              );
+            })}
+          {industries.filter(ind => ind.code && ind.code.length >= 4).length > 50 && (
+            <div className="text-xs text-fg-soft text-center py-3">
+              Showing top 50 of {industries.filter(ind => ind.code && ind.code.length >= 4).length} industry codes
             </div>
           )}
         </div>
