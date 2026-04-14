@@ -1,0 +1,72 @@
+/**
+ * Name Normalization
+ *
+ * Cleans facility and company names from raw records.
+ * Uses the shared companyNormalization system from Archangel,
+ * extended with additional rules for the EPA/OSHA universe.
+ */
+
+import {
+  normalizeCompanyName,
+  cleanCompanyName,
+  extractCompanyFromFacilityName,
+} from '@shared/companyNormalization.js';
+
+export interface NormalizedNames {
+  facilityName: string;
+  companyName: string | null;
+}
+
+/**
+ * Normalize a facility name: trim, collapse whitespace, remove artifacts.
+ */
+export function normalizeFacilityName(raw: string | null): string | null {
+  if (!raw) return null;
+
+  let name = raw
+    .trim()
+    .replace(/\s+/g, ' ')
+    // Remove trailing punctuation artifacts
+    .replace(/[,;.]+$/, '')
+    // Remove parenthetical location duplicates like "BOEING (EVERETT)"
+    // but keep meaningful ones like "DIVISION (AEROSPACE)"
+    .trim();
+
+  return name || null;
+}
+
+/**
+ * Extract and normalize a company name from available data.
+ *
+ * Priority:
+ * 1. TRI parent company name (cleanest source)
+ * 2. Extract from facility name (pattern-based)
+ * 3. Facility name itself as fallback (cleaned)
+ */
+export function resolveCompanyName(
+  triParentCompany: string | null,
+  facilityName: string | null,
+): string | null {
+  // TRI parent company is the best source
+  if (triParentCompany) {
+    return normalizeCompanyName(triParentCompany);
+  }
+
+  // Try to extract from facility name
+  if (facilityName) {
+    const extracted = extractCompanyFromFacilityName(facilityName);
+    if (extracted) return extracted;
+
+    // Last resort: try normalizing the facility name itself
+    // (only works if the facility is named after the company)
+    const normalized = normalizeCompanyName(facilityName);
+    if (normalized !== cleanCompanyName(facilityName)) {
+      // The normalizer matched a known company pattern
+      return normalized;
+    }
+  }
+
+  return null;
+}
+
+export { normalizeCompanyName, cleanCompanyName };

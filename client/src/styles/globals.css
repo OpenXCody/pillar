@@ -1,0 +1,148 @@
+/* Google Fonts Import */
+@import url('https://fonts.googleapis.com/css2?family=Oxanium:wght@200;300;400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* UNIFIED GRAYSCALE THEME - Matching Archangel */
+@layer base {
+  :root {
+    --background: 0 0% 6%;
+    --foreground: 0 0% 95%;
+    --card: 0 0% 8%;
+    --card-foreground: 0 0% 92%;
+    --popover: 0 0% 8%;
+    --popover-foreground: 0 0% 92%;
+    --primary: 0 0% 85%;
+    --primary-foreground: 0 0% 10%;
+    --secondary: 0 0% 15%;
+    --secondary-foreground: 0 0% 85%;
+    --muted: 0 0% 15%;
+    --muted-foreground: 0 0% 65%;
+    --accent: 0 0% 20%;
+    --accent-foreground: 0 0% 90%;
+    --destructive: 0 70% 50%;
+    --destructive-foreground: 0 0% 95%;
+    --border: 0 0% 20%;
+    --input: 0 0% 12%;
+    --ring: 0 0% 75%;
+    --chart-1: 0 0% 70%;
+    --chart-2: 0 0% 60%;
+    --chart-3: 0 0% 50%;
+    --chart-4: 0 0% 40%;
+    --chart-5: 0 0% 30%;
+    --radius: 0.5rem;
+
+    --color-bg-shell: #0a0a0a;
+    --color-bg-base: #0f0f0f;
+    --color-bg-surface: #141414;
+    --color-bg-elevated: #1a1a1a;
+
+    --color-fg-default: #f2f2f2;
+    --color-fg-muted: #a6a6a6;
+    --color-fg-soft: #666666;
+
+    --color-border-subtle: #262626;
+    --color-border-strong: #333333;
+
+    --color-accent-primary: #d9d9d9;
+    --color-accent-soft: #1a1a1a;
+    --color-accent-warning: #ff9f1c;
+  }
+}
+
+* {
+  border-color: hsl(var(--border));
+}
+
+body {
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
+  font-family: 'Oxanium', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif;
+  font-feature-settings: "rlig" 1, "calt" 1;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.header-title {
+  font-family: 'Oxanium', sans-serif;
+  font-weight: 600;
+  font-size: calc(125% + 10px);
+  letter-spacing: 0.055em;
+  text-transform: uppercase;
+}
+
+.sub-header {
+  font-family: 'Oxanium', sans-serif;
+  font-weight: 300;
+  font-size: 0.6rem;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+}
+
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-accent-primary);
+  outline-offset: 2px;
+}
+
+input[type="text"]:focus,
+input[type="search"]:focus {
+  outline: none;
+  box-shadow: none;
+}
+
+input {
+  border: none;
+  background: transparent;
+}
+
+@layer utilities {
+  .bg-bg-shell { background-color: var(--color-bg-shell); }
+  .bg-bg-base { background-color: var(--color-bg-base); }
+  .bg-bg-surface { background-color: var(--color-bg-surface); }
+  .bg-bg-elevated { background-color: var(--color-bg-elevated); }
+
+  .text-fg-default { color: var(--color-fg-default); }
+  .text-fg-muted { color: var(--color-fg-muted); }
+  .text-fg-soft { color: var(--color-fg-soft); }
+
+  .border-border-subtle { border-color: var(--color-border-subtle); }
+  .border-border-strong { border-color: var(--color-border-strong); }
+
+  .bg-accent-primary { background-color: var(--color-accent-primary); }
+  .bg-accent-soft { background-color: var(--color-accent-soft); }
+  .text-accent-primary { color: var(--color-accent-primary); }
+}
+
+.glass {
+  background: rgba(255, 255, 255, 0.02);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #333333; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #444444; }
