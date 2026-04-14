@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { companiesApi } from '@/lib/api';
 import { DATA_SOURCES } from '@shared/types';
 import type { Facility } from '@shared/types';
+import { getCategoryLabel } from '@shared/naics';
 import {
   ArrowLeft, Building2, Factory, MapPin, Hash, Database,
   ChevronRight, ChevronDown, ChevronUp, ShieldCheck, AlertCircle, Ban,
@@ -159,38 +160,54 @@ export default function CompanyDetail() {
         </div>
       )}
 
-      {/* Industry Breakdown */}
+      {/* Industry Breakdown — grouped by category */}
       {company.naicsBreakdown.length > 0 && (
         <div className="bg-white/[0.02] backdrop-blur-sm border border-white/5 rounded-xl p-4">
           <h3 className="text-xs font-medium text-fg-soft mb-3 flex items-center gap-1.5">
             <Hash className="w-3.5 h-3.5" /> Industry Breakdown
           </h3>
           <div className="space-y-2">
-            {company.naicsBreakdown.map(({ code, description, count }) => {
-              const maxCount = company.naicsBreakdown[0].count;
-              const pct = maxCount > 0 ? (count / maxCount) * 100 : 0;
-              return (
-                <div
-                  key={code}
-                  onClick={() => navigate(`/facilities?naics=${code}&company=${encodeURIComponent(company.name)}`)}
-                  className="flex items-center gap-3 cursor-pointer hover:bg-white/[0.03] rounded-lg px-1 py-0.5 -mx-1 transition-colors group"
-                >
-                  <span className="text-xs text-fg-muted w-14 font-mono group-hover:text-emerald-400 transition-colors flex-shrink-0">{code}</span>
-                  <div className="flex-1 min-w-0">
-                    <div className="h-5 bg-white/[0.03] rounded-full overflow-hidden">
-                      <div
-                        className="h-full rounded-full transition-all duration-500 group-hover:opacity-80"
-                        style={{ width: `${pct}%`, backgroundColor: 'rgba(16, 185, 129, 0.25)' }}
-                      />
+            {(() => {
+              // Group NAICS codes by category
+              const grouped = new Map<string, { label: string; count: number; codes: { code: string; description: string | null; count: number }[] }>();
+              for (const { code, description, count } of company.naicsBreakdown) {
+                const cat = getCategoryLabel(code);
+                if (!grouped.has(cat)) grouped.set(cat, { label: cat, count: 0, codes: [] });
+                const g = grouped.get(cat)!;
+                g.count += count;
+                g.codes.push({ code, description, count });
+              }
+              const sorted = Array.from(grouped.values()).sort((a, b) => b.count - a.count);
+              const maxCount = sorted[0]?.count ?? 1;
+
+              return sorted.map(({ label, count, codes }) => {
+                const pct = maxCount > 0 ? (count / maxCount) * 100 : 0;
+                return (
+                  <div key={label}>
+                    <div
+                      onClick={() => navigate(`/facilities?company=${encodeURIComponent(company.name)}`)}
+                      className="flex items-center gap-3 cursor-pointer hover:bg-white/[0.03] rounded-lg px-1 py-0.5 -mx-1 transition-colors"
+                    >
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-0.5">
+                          <span className="text-xs font-medium text-fg-default">{label}</span>
+                          {codes.length > 1 && (
+                            <span className="text-[10px] text-fg-soft">{codes.length} codes</span>
+                          )}
+                        </div>
+                        <div className="h-1.5 bg-white/[0.03] rounded-full overflow-hidden">
+                          <div
+                            className="h-full rounded-full transition-all duration-500"
+                            style={{ width: `${pct}%`, backgroundColor: 'rgba(99, 102, 241, 0.35)' }}
+                          />
+                        </div>
+                      </div>
+                      <span className="text-sm font-semibold text-fg-default w-10 text-right flex-shrink-0">{count}</span>
                     </div>
-                    {description && (
-                      <p className="text-[10px] text-fg-soft truncate mt-0.5">{description}</p>
-                    )}
                   </div>
-                  <span className="text-xs text-fg-muted w-8 text-right font-mono flex-shrink-0">{count}</span>
-                </div>
-              );
-            })}
+                );
+              });
+            })()}
           </div>
         </div>
       )}

@@ -125,7 +125,63 @@ statsRouter.get('/industries', async (_req, res) => {
       }
     }
 
+    // Build category aggregations from subsector data
+    const { INDUSTRY_CATEGORIES } = await import('@shared/naics.js');
+    const categoryMap = new Map<string, { key: string; label: string; facilityCount: number; companyCount: number; subsectors: string[] }>();
+    for (const cat of INDUSTRY_CATEGORIES) {
+      categoryMap.set(cat.key, { key: cat.key, label: cat.label, facilityCount: 0, companyCount: 0, subsectors: [] });
+    }
+    // Map each subsector to its category
+    for (const row of subsectors) {
+      const sub = String(row.subsector);
+      let matched = false;
+      // Check 4-digit prefixes first (e.g. 3364 → Aerospace), then 3-digit
+      for (const cat of INDUSTRY_CATEGORIES) {
+        for (const prefix of cat.naicsPrefixes) {
+          if (sub.startsWith(prefix) || prefix.startsWith(sub)) {
+            const entry = categoryMap.get(cat.key)!;
+            entry.facilityCount += Number(row.facility_count);
+            entry.companyCount += Number(row.company_count);
+            if (!entry.subsectors.includes(sub)) entry.subsectors.push(sub);
+            matched = true;
+            break;
+          }
+        }
+        if (matched) break;
+      }
+    }
+    // For 336 split (Aerospace vs Automobiles), use 4-digit query
+    const transportSplit = await db.execute(sql`
+      SELECT
+        LEFT(primary_naics, 4) as prefix4,
+        COUNT(*)::int as facility_count,
+        COUNT(DISTINCT company_id)::int as company_count
+      FROM facilities
+      WHERE LEFT(primary_naics, 3) = '336' AND primary_naics IS NOT NULL
+      GROUP BY LEFT(primary_naics, 4)
+    `);
+    // Reset the 336 counts and recalculate from 4-digit data
+    const aero = categoryMap.get('aerospace')!;
+    const auto = categoryMap.get('automobiles')!;
+    aero.facilityCount = 0; aero.companyCount = 0;
+    auto.facilityCount = 0; auto.companyCount = 0;
+    for (const row of transportSplit) {
+      const p4 = String(row.prefix4);
+      if (p4 === '3364') {
+        aero.facilityCount += Number(row.facility_count);
+        aero.companyCount += Number(row.company_count);
+      } else {
+        auto.facilityCount += Number(row.facility_count);
+        auto.companyCount += Number(row.company_count);
+      }
+    }
+
+    const categories = Array.from(categoryMap.values())
+      .filter(c => c.facilityCount > 0)
+      .sort((a, b) => b.facilityCount - a.facilityCount);
+
     res.json({
+      categories,
       industries: naicsList.map((r: Record<string, unknown>) => ({
         code: r.code,
         description: r.description,

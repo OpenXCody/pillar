@@ -39,11 +39,6 @@ const SUBSECTOR_NAMES: Record<string, string> = {
 };
 
 /** Sector-level names */
-const SECTOR_NAMES: Record<string, string> = {
-  '31': 'Food, Beverage, Textiles & Apparel',
-  '32': 'Wood, Paper, Chemical, Plastics & Minerals',
-  '33': 'Metals, Machinery, Electronics & Transport',
-};
 
 const STATE_NAME_MAP: Record<string, string> = {};
 for (const s of US_STATES) STATE_NAME_MAP[s.code] = s.name;
@@ -294,7 +289,8 @@ function StatesTab() {
 /* ─── Industries Tab ─── */
 function IndustriesTab() {
   const navigate = useNavigate();
-  const [view, setView] = useState<'subsectors' | 'detailed'>('subsectors');
+  const [view, setView] = useState<'categories' | 'subsectors' | 'detailed'>('categories');
+  const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
   const [expandedSubsector, setExpandedSubsector] = useState<string | null>(null);
 
   const { data, isLoading } = useQuery({
@@ -304,8 +300,9 @@ function IndustriesTab() {
 
   const subsectors = data?.subsectors ?? [];
   const industries = data?.industries ?? [];
-  const sectors = data?.sectors ?? [];
+  const categories = data?.categories ?? [];
   const maxSubsectorCount = subsectors[0]?.facilityCount ?? 1;
+  const maxCategoryCount = categories[0]?.facilityCount ?? 1;
 
   // Group detailed industries by subsector
   const industriesBySubsector: Record<string, typeof industries> = {};
@@ -317,28 +314,14 @@ function IndustriesTab() {
 
   return (
     <div className="space-y-5">
-      {/* Sector summary cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        {sectors.map(s => (
-          <div key={s.sector} className="p-4 bg-white/[0.02] border border-white/5 rounded-xl">
-            <div className="text-xs text-fg-soft mb-1">NAICS {s.sector}xxxx</div>
-            <div className="text-sm font-medium text-fg-default mb-2">{SECTOR_NAMES[s.sector] || `Sector ${s.sector}`}</div>
-            <div className="flex items-center gap-4">
-              <div>
-                <span className="text-lg font-semibold text-fg-default">{s.facilityCount.toLocaleString()}</span>
-                <span className="text-[10px] text-fg-soft ml-1">factories</span>
-              </div>
-              <div>
-                <span className="text-sm font-medium text-fg-muted">{s.companyCount.toLocaleString()}</span>
-                <span className="text-[10px] text-fg-soft ml-1">companies</span>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* View toggle */}
+      {/* View toggle — Categories first */}
       <div className="flex items-center gap-2">
+        <button
+          onClick={() => setView('categories')}
+          className={`text-xs px-2.5 py-1 rounded-md transition-all ${view === 'categories' ? 'bg-white/[0.08] text-fg-default border border-white/10' : 'text-fg-soft hover:text-fg-muted'}`}
+        >
+          Categories
+        </button>
         <button
           onClick={() => setView('subsectors')}
           className={`text-xs px-2.5 py-1 rounded-md transition-all ${view === 'subsectors' ? 'bg-white/[0.08] text-fg-default border border-white/10' : 'text-fg-soft hover:text-fg-muted'}`}
@@ -355,6 +338,60 @@ function IndustriesTab() {
 
       {isLoading ? (
         <div className="text-sm text-fg-soft">Loading industry data...</div>
+      ) : view === 'categories' ? (
+        /* Categories view — 11 custom domain groupings */
+        <div className="bg-white/[0.02] backdrop-blur-sm border border-white/5 rounded-xl divide-y divide-white/5">
+          {categories.map(cat => {
+            const isExpanded = expandedCategory === cat.key;
+            const barPct = maxCategoryCount > 0 ? (cat.facilityCount / maxCategoryCount) * 100 : 0;
+            // Find subsectors within this category
+            const catSubsectors = subsectors.filter(sub =>
+              cat.subsectors?.includes(sub.subsector)
+            );
+
+            return (
+              <div key={cat.key}>
+                <div
+                  onClick={() => setExpandedCategory(isExpanded ? null : cat.key)}
+                  className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-white/[0.02] transition-colors"
+                >
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-sm font-medium text-fg-default">{cat.label}</span>
+                    </div>
+                    <div className="h-1.5 bg-white/[0.03] rounded-full overflow-hidden">
+                      <div className="h-full rounded-full" style={{ width: `${barPct}%`, backgroundColor: 'rgba(99, 102, 241, 0.35)' }} />
+                    </div>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <div className="text-sm font-semibold text-fg-default">{cat.facilityCount.toLocaleString()}</div>
+                    <div className="text-[10px] text-fg-soft">{cat.companyCount.toLocaleString()} cos</div>
+                  </div>
+                  <ChevronDown className={`w-3.5 h-3.5 text-fg-soft transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                </div>
+
+                {/* Expanded: show NAICS subsectors within this category */}
+                {isExpanded && catSubsectors.length > 0 && (
+                  <div className="bg-white/[0.01] border-t border-white/5 px-4 py-2 space-y-1">
+                    {catSubsectors.map(sub => (
+                      <div
+                        key={sub.subsector}
+                        onClick={() => navigate(`/facilities?naics=${sub.subsector}`)}
+                        className="flex items-center gap-3 py-1.5 px-2 -mx-2 rounded-md hover:bg-white/[0.03] cursor-pointer transition-colors"
+                      >
+                        <span className="text-[10px] font-mono text-fg-soft w-8">{sub.subsector}</span>
+                        <span className="text-xs text-fg-muted flex-1 truncate">
+                          {SUBSECTOR_NAMES[sub.subsector] || `Subsector ${sub.subsector}`}
+                        </span>
+                        <span className="text-xs font-medium text-fg-default">{sub.facilityCount.toLocaleString()}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
       ) : view === 'subsectors' ? (
         /* Subsector view */
         <div className="bg-white/[0.02] backdrop-blur-sm border border-white/5 rounded-xl divide-y divide-white/5">

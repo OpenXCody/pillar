@@ -50,3 +50,56 @@ export function getNaicsDescription(code: string): string {
   const subsector = getNaicsSubsector(code);
   return subsector?.title || `NAICS ${code}`;
 }
+
+// ─── Custom Industry Categories ─────────────────────────────────────
+// Human-readable domain groupings that map NAICS prefixes to simple labels.
+// Longer prefixes match first (3364 = Aerospace before 336 = Automobiles).
+
+export interface IndustryCategory {
+  key: string;
+  label: string;
+  naicsPrefixes: string[];  // matched by startsWith, longest first
+}
+
+export const INDUSTRY_CATEGORIES: IndustryCategory[] = [
+  { key: 'aerospace',    label: 'Aerospace & Defense',     naicsPrefixes: ['3364'] },
+  { key: 'automobiles',  label: 'Automobiles & Vehicles',  naicsPrefixes: ['3361', '3362', '3363', '3365', '3366', '3367', '3369'] },
+  { key: 'metals',       label: 'Metals',                  naicsPrefixes: ['331', '332'] },
+  { key: 'chemicals',    label: 'Chemicals & Energy',      naicsPrefixes: ['324', '325'] },
+  { key: 'minerals',     label: 'Minerals',                naicsPrefixes: ['327'] },
+  { key: 'machinery',    label: 'Machinery',               naicsPrefixes: ['333'] },
+  { key: 'electronics',  label: 'Electronics',             naicsPrefixes: ['334', '335'] },
+  { key: 'plastics',     label: 'Plastics & Rubber',       naicsPrefixes: ['326'] },
+  { key: 'organics',     label: 'Organics & Textiles',     naicsPrefixes: ['313', '314', '315', '316', '321', '322'] },
+  { key: 'food',         label: 'Food & Beverage',         naicsPrefixes: ['311', '312'] },
+  { key: 'general',      label: 'General Manufacturing',   naicsPrefixes: ['323', '337', '339'] },
+];
+
+// Pre-built lookup: sorted longest-prefix-first for correct matching
+const _categoryLookup: { prefix: string; category: IndustryCategory }[] = [];
+for (const cat of INDUSTRY_CATEGORIES) {
+  for (const prefix of cat.naicsPrefixes) {
+    _categoryLookup.push({ prefix, category: cat });
+  }
+}
+_categoryLookup.sort((a, b) => b.prefix.length - a.prefix.length);
+
+/**
+ * Get the industry category for a NAICS code.
+ * Returns the category whose prefix matches, longest-prefix-first.
+ */
+export function getIndustryCategory(naicsCode: string | null | undefined): IndustryCategory | null {
+  if (!naicsCode) return null;
+  for (const entry of _categoryLookup) {
+    if (naicsCode.startsWith(entry.prefix)) return entry.category;
+  }
+  return null;
+}
+
+/**
+ * Get the category label for a NAICS code, or a fallback.
+ */
+export function getCategoryLabel(naicsCode: string | null | undefined): string {
+  const cat = getIndustryCategory(naicsCode);
+  return cat?.label || 'Manufacturing';
+}

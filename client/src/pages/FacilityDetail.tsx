@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { facilitiesApi } from '@/lib/api';
 import { DATA_SOURCES } from '@shared/types';
-import { MANUFACTURING_SUBSECTORS } from '@shared/naics';
+import { MANUFACTURING_SUBSECTORS, getCategoryLabel } from '@shared/naics';
 import {
   ArrowLeft, MapPin, Hash, Building2, Database, Clock,
   Pencil, Save, X, Check,
@@ -390,10 +390,13 @@ export default function FacilityDetail() {
           ) : (
             <div className="space-y-1.5 text-sm">
               {facility.primaryNaics && (
-                <p className="text-fg-default">
-                  <span className="font-mono text-fg-muted">{facility.primaryNaics}</span>{' '}
-                  {facility.primaryNaicsDescription}
-                </p>
+                <>
+                  <p className="text-fg-default font-medium">{getCategoryLabel(facility.primaryNaics)}</p>
+                  <p className="text-fg-muted text-xs">
+                    <span className="font-mono">{facility.primaryNaics}</span>{' '}
+                    {facility.primaryNaicsDescription}
+                  </p>
+                </>
               )}
               {facility.employeeCount && <p className="text-fg-muted">{facility.employeeCount.toLocaleString()} employees</p>}
               <p className="text-fg-muted">Sources: {facility.sourceCount}</p>
