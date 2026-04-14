@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { db } from '../db/index.js';
 import { facilities, facilitySources, rawRecords } from '../db/schema.js';
-import { sql, eq, ilike, and, gt, count } from 'drizzle-orm';
+import { sql, eq, ilike, and, count, desc } from 'drizzle-orm';
 
 export const facilitiesRouter = Router();
 
@@ -39,18 +39,26 @@ facilitiesRouter.get('/', async (req, res) => {
     const limit = Math.min(parseInt(String(rawLimit || '50'), 10), 100);
 
     const conditions = buildFacilityFilters(req.query);
-    if (cursor) conditions.push(gt(facilities.id, String(cursor)));
+
+    // Cursor format: "confidence:id" for stable sort by confidence DESC, id DESC
+    if (cursor) {
+      const [cursorConf, cursorId] = String(cursor).split(':');
+      conditions.push(
+        sql`(${facilities.confidence}, ${facilities.id}) < (${parseInt(cursorConf)}, ${cursorId})`
+      );
+    }
 
     const where = conditions.length > 0 ? and(...conditions) : undefined;
 
     const rows = await db.select().from(facilities)
       .where(where)
-      .orderBy(facilities.id)
+      .orderBy(desc(facilities.confidence), desc(facilities.id))
       .limit(limit + 1);
 
     const hasMore = rows.length > limit;
     const data = hasMore ? rows.slice(0, limit) : rows;
-    const nextCursor = hasMore ? data[data.length - 1].id : null;
+    const lastRow = data[data.length - 1];
+    const nextCursor = hasMore && lastRow ? `${lastRow.confidence}:${lastRow.id}` : null;
 
     res.json({
       data: data.map(f => ({

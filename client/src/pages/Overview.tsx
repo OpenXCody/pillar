@@ -75,7 +75,7 @@ export default function Overview() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {Object.values(DATA_SOURCES).filter(s => s.key !== 'manual').map(source => {
             const recordCount = stats?.bySource[source.key] ?? 0;
-            const isSynced = recordCount > 0;
+            const isSynced = !isLoading && recordCount > 0;
             const isV2 = source.key === 'osha' || source.key === 'usda_fsis';
             const isSyncing = pipelineStatus?.running && pipelineStatus.currentSource === source.key;
             return (
@@ -122,6 +122,8 @@ export default function Overview() {
                     </span>
                     {isV2 ? (
                       <span className="text-[10px] text-fg-soft">Coming Soon</span>
+                    ) : isLoading ? (
+                      <span className="text-[10px] text-fg-soft">Loading...</span>
                     ) : isSynced ? (
                       <span className="flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
                         <CheckCircle2 className="w-3 h-3" /> Synced

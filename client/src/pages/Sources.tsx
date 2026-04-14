@@ -117,7 +117,11 @@ export default function Sources() {
                   ) : isActive ? (
                     isSynced ? (
                       <button
-                        onClick={() => fetchMutation.mutate(source.key)}
+                        onClick={() => {
+                          if (window.confirm(`Re-sync ${source.name}? This will download the latest dataset and may take several minutes.`)) {
+                            fetchMutation.mutate(source.key);
+                          }
+                        }}
                         disabled={isPipelineRunning}
                         className="flex items-center justify-center gap-2 flex-shrink-0 px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded-full text-xs font-medium text-emerald-400 hover:bg-emerald-500/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                       >

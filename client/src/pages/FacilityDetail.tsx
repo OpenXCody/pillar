@@ -346,12 +346,14 @@ export default function FacilityDetail() {
                 </p>
               )}
               {facility.employeeCount && <p className="text-fg-muted">{facility.employeeCount.toLocaleString()} employees</p>}
-              <p className="text-fg-muted">Confidence: {facility.confidence}/100</p>
               <p className="text-fg-muted">Sources: {facility.sourceCount}</p>
             </div>
           )}
         </div>
       </div>
+
+      {/* Confidence Score */}
+      {!isEditing && <ConfidenceBreakdown facility={facility} />}
 
       {/* Sources */}
       <div className="bg-bg-surface border border-border-subtle rounded-xl p-4">
@@ -437,6 +439,125 @@ export default function FacilityDetail() {
         <p className="text-xs text-fg-soft text-center">
           Click Edit to correct any data. Changes are tracked as Open X updates for full audit visibility.
         </p>
+      )}
+    </div>
+  );
+}
+
+/** Compute and display confidence score breakdown */
+function ConfidenceBreakdown({ facility }: { facility: import('@shared/types').FacilityDetail }) {
+  // Score factors — these match the merge pipeline's scoring logic
+  const factors = [
+    {
+      label: 'Data source',
+      description: 'Exists in at least one federal source',
+      points: 30,
+      earned: 30, // always true if record exists
+      met: true,
+    },
+    {
+      label: 'Multi-source',
+      description: 'Confirmed by 2+ independent sources',
+      points: 25,
+      earned: facility.sourceCount >= 2 ? 25 : 0,
+      met: facility.sourceCount >= 2,
+    },
+    {
+      label: 'Company linked',
+      description: 'Parent company identified',
+      points: 15,
+      earned: facility.companyName ? 15 : 0,
+      met: !!facility.companyName,
+    },
+    {
+      label: 'Full address',
+      description: 'Street, city, state, and ZIP present',
+      points: 10,
+      earned: (facility.address && facility.city && facility.state && facility.zip) ? 10 : 0,
+      met: !!(facility.address && facility.city && facility.state && facility.zip),
+    },
+    {
+      label: 'NAICS classified',
+      description: 'Industry code assigned',
+      points: 10,
+      earned: facility.primaryNaics ? 10 : 0,
+      met: !!facility.primaryNaics,
+    },
+    {
+      label: 'Coordinates',
+      description: 'Latitude and longitude for mapping',
+      points: 10,
+      earned: (facility.latitude && facility.longitude) ? 10 : 0,
+      met: !!(facility.latitude && facility.longitude),
+    },
+  ];
+
+  const totalEarned = factors.reduce((sum, f) => sum + f.earned, 0);
+  const totalPossible = factors.reduce((sum, f) => sum + f.points, 0);
+  const color = totalEarned >= 70 ? 'emerald' : totalEarned >= 40 ? 'amber' : 'red';
+  const colorClasses = {
+    emerald: { bar: 'bg-emerald-500', text: 'text-emerald-400', bg: 'bg-emerald-500/10' },
+    amber: { bar: 'bg-amber-500', text: 'text-amber-400', bg: 'bg-amber-500/10' },
+    red: { bar: 'bg-red-500', text: 'text-red-400', bg: 'bg-red-500/10' },
+  }[color];
+  const label = totalEarned >= 80 ? 'High' : totalEarned >= 50 ? 'Medium' : 'Low';
+
+  return (
+    <div className="bg-bg-surface border border-border-subtle rounded-xl p-4">
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="text-xs font-medium text-fg-soft flex items-center gap-1.5">
+          Confidence Score
+        </h3>
+        <div className="flex items-center gap-2">
+          <span className={`text-xs font-medium ${colorClasses.text}`}>{label}</span>
+          <span className={`text-sm font-bold ${colorClasses.text}`}>{totalEarned}</span>
+          <span className="text-xs text-fg-soft">/ {totalPossible}</span>
+        </div>
+      </div>
+
+      {/* Main progress bar */}
+      <div className="h-2.5 bg-white/5 rounded-full overflow-hidden mb-4">
+        <div
+          className={`h-full rounded-full transition-all duration-500 ${colorClasses.bar}`}
+          style={{ width: `${(totalEarned / totalPossible) * 100}%` }}
+        />
+      </div>
+
+      {/* Factor breakdown */}
+      <div className="space-y-2">
+        {factors.map((factor) => (
+          <div key={factor.label} className="flex items-center gap-3">
+            <div className={`w-4 h-4 rounded flex items-center justify-center flex-shrink-0 ${factor.met ? 'bg-emerald-500/20 text-emerald-400' : 'bg-white/5 text-fg-soft'}`}>
+              {factor.met ? (
+                <Check className="w-3 h-3" />
+              ) : (
+                <span className="text-[10px]">-</span>
+              )}
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <span className={`text-xs font-medium ${factor.met ? 'text-fg-default' : 'text-fg-soft'}`}>
+                  {factor.label}
+                </span>
+                <span className="text-[10px] text-fg-soft">{factor.description}</span>
+              </div>
+            </div>
+            <span className={`text-xs font-mono flex-shrink-0 ${factor.met ? colorClasses.text : 'text-fg-soft'}`}>
+              +{factor.earned}
+            </span>
+          </div>
+        ))}
+      </div>
+
+      {/* Hint for improvement */}
+      {totalEarned < totalPossible && (
+        <div className="mt-3 pt-3 border-t border-border-subtle">
+          <p className="text-[10px] text-fg-soft">
+            {!facility.companyName && 'Link a parent company. '}
+            {facility.sourceCount < 2 && 'Additional data sources will increase confidence. '}
+            {!facility.primaryNaics && 'Add a NAICS industry code. '}
+          </p>
+        </div>
       )}
     </div>
   );
