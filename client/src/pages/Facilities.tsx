@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { facilitiesApi } from '@/lib/api';
@@ -6,17 +6,21 @@ import { Search, Factory, Building2, MapPin, ChevronRight, Hash, X } from 'lucid
 import { US_STATES } from '@shared/states';
 import { MANUFACTURING_SUBSECTORS } from '@shared/naics';
 import { DATA_SOURCES } from '@shared/types';
+import type { Facility } from '@shared/types';
 
 export default function Facilities() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
-  // Read initial filters from URL params (e.g., ?company=Boeing)
+  // Read initial filters from URL params (e.g., ?company=Boeing&state=TX)
   const [search, setSearch] = useState(searchParams.get('search') || '');
   const [stateFilter, setStateFilter] = useState(searchParams.get('state') || '');
   const [naicsFilter, setNaicsFilter] = useState(searchParams.get('naics') || '');
   const [companyFilter, setCompanyFilter] = useState(searchParams.get('company') || '');
   const [cursor, setCursor] = useState<string | undefined>();
+  const [prevPages, setPrevPages] = useState<Facility[]>([]);
+
+  const hasFilters = !!(search || stateFilter || naicsFilter || companyFilter);
 
   const { data, isLoading } = useQuery({
     queryKey: ['facilities', { search, state: stateFilter, naics: naicsFilter, company: companyFilter, cursor }],
@@ -30,13 +34,46 @@ export default function Facilities() {
     }),
   });
 
+  // Fetch total count when filters are active
+  const { data: countData } = useQuery({
+    queryKey: ['facilities-count', { search, state: stateFilter, naics: naicsFilter, company: companyFilter }],
+    queryFn: () => facilitiesApi.count({
+      search: search || undefined,
+      state: stateFilter || undefined,
+      naics: naicsFilter || undefined,
+      company: companyFilter || undefined,
+    }),
+    enabled: hasFilters,
+  });
+
+  const displayItems = [...prevPages, ...(data?.data ?? [])];
   const activeFilters = [stateFilter, naicsFilter, companyFilter].filter(Boolean).length;
 
   const clearAllFilters = () => {
     setSearch(''); setStateFilter(''); setNaicsFilter(''); setCompanyFilter('');
     setCursor(undefined);
+    setPrevPages([]);
     setSearchParams({});
   };
+
+  function setFilter(key: string, value: string) {
+    setCursor(undefined);
+    setPrevPages([]);
+    if (key === 'state') setStateFilter(value);
+    else if (key === 'naics') setNaicsFilter(value);
+    else if (key === 'company') { setCompanyFilter(value); if (!value) setSearchParams({}); }
+  }
+
+  const handleLoadMore = useCallback(() => {
+    if (data?.nextCursor) {
+      setPrevPages(displayItems);
+      setCursor(data.nextCursor);
+    }
+  }, [data, displayItems]);
+
+  // Get the human-readable state name for display
+  const stateObj = stateFilter ? US_STATES.find(s => s.code === stateFilter) : null;
+  const naicsObj = naicsFilter ? MANUFACTURING_SUBSECTORS.find(s => s.code === naicsFilter) : null;
 
   return (
     <div className="space-y-5">
@@ -53,12 +90,12 @@ export default function Facilities() {
             type="text"
             placeholder="Search factories or companies..."
             value={search}
-            onChange={e => { setSearch(e.target.value); setCursor(undefined); }}
+            onChange={e => { setSearch(e.target.value); setCursor(undefined); setPrevPages([]); }}
             className="flex-1 text-sm text-fg-default placeholder:text-fg-soft bg-transparent"
             style={{ outline: 'none', border: 'none' }}
           />
           {search && (
-            <button onClick={() => { setSearch(''); setCursor(undefined); }} className="p-0.5 text-fg-soft hover:text-fg-muted">
+            <button onClick={() => { setSearch(''); setCursor(undefined); setPrevPages([]); }} className="p-0.5 text-fg-soft hover:text-fg-muted">
               <X className="w-3.5 h-3.5" />
             </button>
           )}
@@ -66,7 +103,7 @@ export default function Facilities() {
 
         <select
           value={stateFilter}
-          onChange={e => { setStateFilter(e.target.value); setCursor(undefined); }}
+          onChange={e => setFilter('state', e.target.value)}
           className="bg-bg-surface border border-border-subtle rounded-lg px-3 py-2.5 text-sm text-fg-default appearance-none cursor-pointer"
         >
           <option value="">All States</option>
@@ -77,7 +114,7 @@ export default function Facilities() {
 
         <select
           value={naicsFilter}
-          onChange={e => { setNaicsFilter(e.target.value); setCursor(undefined); }}
+          onChange={e => setFilter('naics', e.target.value)}
           className="bg-bg-surface border border-border-subtle rounded-lg px-3 py-2.5 text-sm text-fg-default appearance-none cursor-pointer"
         >
           <option value="">All Industries</option>
@@ -85,49 +122,65 @@ export default function Facilities() {
             <option key={s.code} value={s.code}>{s.code} - {s.title}</option>
           ))}
         </select>
-
-        {companyFilter && (
-          <div className="flex items-center gap-1.5 bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-2">
-            <Building2 className="w-3.5 h-3.5 text-amber-500" />
-            <span className="text-xs text-amber-400 font-medium">{companyFilter}</span>
-            <button
-              onClick={() => { setCompanyFilter(''); setCursor(undefined); setSearchParams({}); }}
-              className="p-0.5 text-amber-500/60 hover:text-amber-400"
-            >
-              <X className="w-3 h-3" />
-            </button>
-          </div>
-        )}
-
-        {activeFilters > 0 && (
-          <button
-            onClick={clearAllFilters}
-            className="flex items-center gap-1.5 px-3 py-2 text-xs text-fg-muted hover:text-fg-default transition-colors"
-          >
-            <X className="w-3 h-3" /> Clear filters
-          </button>
-        )}
       </div>
 
-      {/* Results count */}
-      {data && (
+      {/* Active filter chips */}
+      {activeFilters > 0 && (
+        <div className="flex items-center gap-2 flex-wrap">
+          {stateFilter && stateObj && (
+            <FilterChip
+              icon={<MapPin className="w-3 h-3 text-indigo-400" />}
+              label={stateObj.name}
+              color="indigo"
+              onRemove={() => setFilter('state', '')}
+            />
+          )}
+          {naicsFilter && naicsObj && (
+            <FilterChip
+              icon={<Hash className="w-3 h-3 text-emerald-400" />}
+              label={`${naicsObj.code} - ${naicsObj.title}`}
+              color="emerald"
+              onRemove={() => setFilter('naics', '')}
+            />
+          )}
+          {companyFilter && (
+            <FilterChip
+              icon={<Building2 className="w-3 h-3 text-amber-500" />}
+              label={companyFilter}
+              color="amber"
+              onRemove={() => setFilter('company', '')}
+            />
+          )}
+          <button
+            onClick={clearAllFilters}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-fg-muted hover:text-fg-default transition-colors"
+          >
+            <X className="w-3 h-3" /> Clear all
+          </button>
+        </div>
+      )}
+
+      {/* Results count with total */}
+      {displayItems.length > 0 && (
         <p className="text-xs text-fg-soft">
-          Showing {data.data.length} factories{data.nextCursor ? '+' : ''}
+          Showing {displayItems.length.toLocaleString()}
+          {hasFilters && countData ? ` of ${countData.count.toLocaleString()}` : ''}
+          {' '}factories{data?.nextCursor && !countData ? '+' : ''}
         </p>
       )}
 
       {/* Facility cards */}
       <div className="space-y-2">
-        {isLoading ? (
+        {isLoading && displayItems.length === 0 ? (
           <div className="text-center py-12 text-sm text-fg-soft">Loading...</div>
-        ) : !data?.data.length ? (
+        ) : displayItems.length === 0 ? (
           <div className="text-center py-12">
             <Factory className="w-10 h-10 text-fg-soft mx-auto mb-3" />
             <p className="text-sm text-fg-muted">No factories found</p>
             <p className="text-xs text-fg-soft mt-1">Run a source fetch to populate data, or adjust your filters.</p>
           </div>
         ) : (
-          data.data.map(f => (
+          displayItems.map((f: Facility) => (
             <div
               key={f.id}
               onClick={() => navigate(`/facilities/${f.id}`)}
@@ -215,13 +268,36 @@ export default function Facilities() {
       {data?.nextCursor && (
         <div className="flex justify-center pt-2">
           <button
-            onClick={() => setCursor(data.nextCursor!)}
+            onClick={handleLoadMore}
             className="px-4 py-2 bg-white/5 border border-white/10 rounded-full text-sm text-fg-muted hover:text-fg-default hover:bg-white/10 transition-colors"
           >
             Load More
           </button>
         </div>
       )}
+    </div>
+  );
+}
+
+function FilterChip({ icon, label, color, onRemove }: {
+  icon: React.ReactNode;
+  label: string;
+  color: string;
+  onRemove: () => void;
+}) {
+  const colorMap: Record<string, string> = {
+    indigo: 'bg-indigo-500/10 border-indigo-500/20 text-indigo-400',
+    emerald: 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400',
+    amber: 'bg-amber-500/10 border-amber-500/20 text-amber-400',
+  };
+
+  return (
+    <div className={`flex items-center gap-1.5 border rounded-lg px-3 py-1.5 ${colorMap[color] || colorMap.indigo}`}>
+      {icon}
+      <span className="text-xs font-medium">{label}</span>
+      <button onClick={onRemove} className="p-0.5 opacity-60 hover:opacity-100">
+        <X className="w-3 h-3" />
+      </button>
     </div>
   );
 }

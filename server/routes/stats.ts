@@ -28,14 +28,13 @@ statsRouter.get('/overview', async (_req, res) => {
       bySource[row.source] = row.count;
     }
 
-    // Top states
+    // All states (sorted by count)
     const topStates = await db
       .select({ state: facilities.state, count: count() })
       .from(facilities)
       .where(sql`${facilities.state} IS NOT NULL`)
       .groupBy(facilities.state)
-      .orderBy(sql`count(*) DESC`)
-      .limit(15);
+      .orderBy(sql`count(*) DESC`);
 
     res.json({
       totalFacilities: facilityCount.count,

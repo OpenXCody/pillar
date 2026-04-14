@@ -8,11 +8,12 @@ import type { DataSource } from '@shared/types.js';
 export const sourcesRouter = Router();
 
 const VALID_SOURCES: DataSource[] = ['epa_echo', 'epa_tri', 'osha', 'usda_fsis'];
+const ALL_SOURCES: DataSource[] = [...VALID_SOURCES, 'manual'];
 
 sourcesRouter.get('/', async (_req, res) => {
   try {
     const sources = await Promise.all(
-      VALID_SOURCES.map(async (key) => {
+      ALL_SOURCES.map(async (key) => {
         const [lastRun] = await db.select().from(sourceRuns)
           .where(eq(sourceRuns.source, key))
           .orderBy(desc(sourceRuns.startedAt))

@@ -36,6 +36,8 @@ export const companiesApi = {
 export const facilitiesApi = {
   list: (params: { search?: string; state?: string; naics?: string; company?: string; minSources?: number; cursor?: string; limit?: number }) =>
     apiFetch<import('@shared/types').PaginatedResponse<import('@shared/types').Facility>>(`/facilities${buildQuery(params)}`),
+  count: (params: { search?: string; state?: string; naics?: string; company?: string }) =>
+    apiFetch<{ count: number }>(`/facilities/count${buildQuery(params)}`),
   get: (id: string) => apiFetch<import('@shared/types').FacilityDetail>(`/facilities/${id}`),
 };
 

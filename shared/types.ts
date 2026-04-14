@@ -38,8 +38,8 @@ export const DATA_SOURCES: Record<DataSource, SourceInfo> = {
   },
   manual: {
     key: 'manual',
-    name: 'Manual',
-    description: 'Manually entered or corrected records',
+    name: 'Open X',
+    description: 'Curated datasets from Open X research and partner uploads',
     color: '#A78BFA',
   },
 };

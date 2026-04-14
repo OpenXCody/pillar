@@ -1,15 +1,23 @@
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { statsApi } from '@/lib/api';
 import { DATA_SOURCES } from '@shared/types';
-import { Database, Factory, Building2, GitCompare, Play, ArrowRight } from 'lucide-react';
+import { Database, Factory, Building2, GitCompare, Play, ArrowRight, ChevronDown, ChevronUp } from 'lucide-react';
+
+const INITIAL_STATES_SHOWN = 10;
 
 export default function Overview() {
   const navigate = useNavigate();
+  const [showAllStates, setShowAllStates] = useState(false);
   const { data: stats, isLoading } = useQuery({
     queryKey: ['stats', 'overview'],
     queryFn: statsApi.overview,
   });
+
+  const visibleStates = showAllStates
+    ? (stats?.byState ?? [])
+    : (stats?.byState ?? []).slice(0, INITIAL_STATES_SHOWN);
 
   return (
     <div className="space-y-6 max-w-5xl">
@@ -31,6 +39,7 @@ export default function Overview() {
           icon={<Building2 className="w-5 h-5 text-amber-500" />}
           label="Companies"
           value={isLoading ? '...' : stats?.totalCompanies.toLocaleString() ?? '0'}
+          onClick={() => navigate('/companies')}
           accent="amber"
         />
         <KpiCard
@@ -72,6 +81,7 @@ export default function Overview() {
               <div className="flex items-center gap-3 mb-2">
                 <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: source.color }} />
                 <span className="text-sm font-medium text-fg-default">{source.name}</span>
+                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">Federal</span>
                 {(source.key === 'osha' || source.key === 'usda_fsis') && (
                   <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-white/5 text-fg-soft border border-white/10">V2</span>
                 )}
@@ -95,20 +105,31 @@ export default function Overview() {
         </div>
       </div>
 
-      {/* Top States */}
+      {/* States */}
       {stats?.byState && stats.byState.length > 0 && (
         <div>
-          <h3 className="text-sm font-medium text-fg-muted mb-3">Top States by Factory Count</h3>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-medium text-fg-muted">
+              {showAllStates ? 'All States' : 'Top States'} by Factory Count
+            </h3>
+            <span className="text-xs text-fg-soft">
+              {stats.byState.length} states
+            </span>
+          </div>
           <div className="bg-white/[0.02] backdrop-blur-sm border border-white/5 rounded-xl p-4 space-y-2.5">
-            {stats.byState.slice(0, 10).map(({ state, count }) => {
+            {visibleStates.map(({ state, count }) => {
               const maxCount = stats.byState[0].count;
               const pct = maxCount > 0 ? (count / maxCount) * 100 : 0;
               return (
-                <div key={state} className="flex items-center gap-3">
-                  <span className="text-xs text-fg-muted w-6 font-mono">{state}</span>
+                <div
+                  key={state}
+                  onClick={() => navigate(`/facilities?state=${state}`)}
+                  className="flex items-center gap-3 cursor-pointer hover:bg-white/[0.03] rounded-lg px-1 py-0.5 -mx-1 transition-colors group"
+                >
+                  <span className="text-xs text-fg-muted w-6 font-mono group-hover:text-indigo-400 transition-colors">{state}</span>
                   <div className="flex-1 h-5 bg-white/[0.03] rounded-full overflow-hidden">
                     <div
-                      className="h-full rounded-full transition-all duration-500"
+                      className="h-full rounded-full transition-all duration-500 group-hover:opacity-80"
                       style={{ width: `${pct}%`, backgroundColor: 'rgba(99, 102, 241, 0.3)' }}
                     />
                   </div>
@@ -116,6 +137,20 @@ export default function Overview() {
                 </div>
               );
             })}
+
+            {/* Show more/less toggle */}
+            {stats.byState.length > INITIAL_STATES_SHOWN && (
+              <button
+                onClick={() => setShowAllStates(!showAllStates)}
+                className="flex items-center gap-1.5 mx-auto pt-2 text-xs text-fg-soft hover:text-fg-muted transition-colors"
+              >
+                {showAllStates ? (
+                  <>Show Less <ChevronUp className="w-3 h-3" /></>
+                ) : (
+                  <>Show All {stats.byState.length} States <ChevronDown className="w-3 h-3" /></>
+                )}
+              </button>
+            )}
           </div>
         </div>
       )}

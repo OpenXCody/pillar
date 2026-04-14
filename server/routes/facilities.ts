@@ -1,24 +1,44 @@
 import { Router } from 'express';
 import { db } from '../db/index.js';
 import { facilities, facilitySources } from '../db/schema.js';
-import { sql, eq, ilike, and, gt } from 'drizzle-orm';
+import { sql, eq, ilike, and, gt, count } from 'drizzle-orm';
 
 export const facilitiesRouter = Router();
 
+/** Build filter conditions from query params (shared between list + count) */
+function buildFacilityFilters(query: Record<string, any>) {
+  const { search, state, naics, company } = query;
+  const conditions = [];
+  if (search) {
+    conditions.push(
+      sql`(${ilike(facilities.name, `%${search}%`)} OR ${ilike(facilities.companyName, `%${search}%`)})`
+    );
+  }
+  if (state) conditions.push(eq(facilities.state, String(state)));
+  if (naics) conditions.push(sql`${facilities.primaryNaics} LIKE ${String(naics) + '%'}`);
+  if (company) conditions.push(ilike(facilities.companyName, `%${company}%`));
+  return conditions;
+}
+
+// GET /api/facilities/count — filtered count (no pagination)
+facilitiesRouter.get('/count', async (req, res) => {
+  try {
+    const conditions = buildFacilityFilters(req.query);
+    const where = conditions.length > 0 ? and(...conditions) : undefined;
+    const [result] = await db.select({ count: count() }).from(facilities).where(where);
+    res.json({ count: result.count });
+  } catch (err) {
+    console.error('Error counting facilities:', err);
+    res.status(500).json({ error: 'Failed to count facilities' });
+  }
+});
+
 facilitiesRouter.get('/', async (req, res) => {
   try {
-    const { search, state, naics, company, cursor, limit: rawLimit } = req.query;
+    const { cursor, limit: rawLimit } = req.query;
     const limit = Math.min(parseInt(String(rawLimit || '50'), 10), 100);
 
-    const conditions = [];
-    if (search) {
-      conditions.push(
-        sql`(${ilike(facilities.name, `%${search}%`)} OR ${ilike(facilities.companyName, `%${search}%`)})`
-      );
-    }
-    if (state) conditions.push(eq(facilities.state, String(state)));
-    if (naics) conditions.push(sql`${facilities.primaryNaics} LIKE ${String(naics) + '%'}`);
-    if (company) conditions.push(ilike(facilities.companyName, `%${company}%`));
+    const conditions = buildFacilityFilters(req.query);
     if (cursor) conditions.push(gt(facilities.id, String(cursor)));
 
     const where = conditions.length > 0 ? and(...conditions) : undefined;

@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { companiesApi } from '@/lib/api';
-import { Search, Building2, Factory, X, ShieldCheck, AlertCircle, Ban } from 'lucide-react';
-import type { CompanyStatus } from '@shared/types';
+import { Search, Building2, Factory, X, ShieldCheck, AlertCircle, Ban, MapPin } from 'lucide-react';
+import type { CompanyStatus, Company } from '@shared/types';
 
 function formatCount(n: number): string {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
@@ -42,6 +42,8 @@ export default function Companies() {
   const [search, setSearch] = useState('');
   const [cursor, setCursor] = useState<string | undefined>();
   const [activeTab, setActiveTab] = useState<TabKey>('verified');
+  // Accumulate pages so "Load More" appends instead of replacing
+  const [prevPages, setPrevPages] = useState<Company[]>([]);
 
   const { data: stats } = useQuery({
     queryKey: ['company-stats'],
@@ -58,6 +60,8 @@ export default function Companies() {
     }),
   });
 
+  // Combine previously loaded pages with current page
+  const displayItems = [...prevPages, ...(data?.data ?? [])];
   const totalCompanies = stats ? stats.verified + stats.unverified + stats.rejected : 0;
 
   const tabs: { key: TabKey; label: string; count: number | null }[] = [
@@ -69,7 +73,21 @@ export default function Companies() {
   function handleTabChange(tab: TabKey) {
     setActiveTab(tab);
     setCursor(undefined);
+    setPrevPages([]);
   }
+
+  function handleSearch(value: string) {
+    setSearch(value);
+    setCursor(undefined);
+    setPrevPages([]);
+  }
+
+  const handleLoadMore = useCallback(() => {
+    if (data?.nextCursor) {
+      setPrevPages(displayItems);
+      setCursor(data.nextCursor);
+    }
+  }, [data, displayItems]);
 
   return (
     <div className="space-y-5">
@@ -115,12 +133,12 @@ export default function Companies() {
             type="text"
             placeholder="Search companies..."
             value={search}
-            onChange={e => { setSearch(e.target.value); setCursor(undefined); }}
+            onChange={e => handleSearch(e.target.value)}
             className="flex-1 text-sm text-fg-default placeholder:text-fg-soft bg-transparent"
             style={{ outline: 'none', border: 'none' }}
           />
           {search && (
-            <button onClick={() => { setSearch(''); setCursor(undefined); }} className="p-0.5 text-fg-soft hover:text-fg-muted">
+            <button onClick={() => handleSearch('')} className="p-0.5 text-fg-soft hover:text-fg-muted">
               <X className="w-3.5 h-3.5" />
             </button>
           )}
@@ -128,17 +146,17 @@ export default function Companies() {
       </div>
 
       {/* Results count */}
-      {data && (
+      {displayItems.length > 0 && (
         <p className="text-xs text-fg-soft">
-          Showing {data.data.length} companies{data.nextCursor ? '+' : ''}
+          Showing {displayItems.length} companies{data?.nextCursor ? '+' : ''}
         </p>
       )}
 
       {/* Company cards */}
       <div className="space-y-2">
-        {isLoading ? (
+        {isLoading && displayItems.length === 0 ? (
           <div className="text-center py-12 text-sm text-fg-soft">Loading...</div>
-        ) : !data?.data.length ? (
+        ) : displayItems.length === 0 ? (
           <div className="text-center py-12">
             <Building2 className="w-10 h-10 text-fg-soft mx-auto mb-3" />
             <p className="text-sm text-fg-muted">No companies found</p>
@@ -149,7 +167,7 @@ export default function Companies() {
             </p>
           </div>
         ) : (
-          data.data.map(c => {
+          displayItems.map((c: Company) => {
             const statusCfg = STATUS_CONFIG[c.status || 'unverified'];
             const StatusIcon = statusCfg.icon;
             return (
@@ -172,7 +190,7 @@ export default function Companies() {
 
                   {/* Content */}
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <h3 className="text-sm font-medium text-fg-default truncate">{c.name}</h3>
                       {/* Status badge */}
                       <span className={`
@@ -186,7 +204,7 @@ export default function Companies() {
                     <p className="text-xs text-fg-muted mt-1 truncate">{c.sector || 'Manufacturing'}</p>
                   </div>
 
-                  {/* Facility count */}
+                  {/* Factory count */}
                   <div className="flex items-center gap-1.5 flex-shrink-0">
                     <Factory className="w-3.5 h-3.5 text-sky-400" />
                     <span className="text-xs text-fg-muted">{formatCount(c.facilityCount)}</span>
@@ -202,7 +220,7 @@ export default function Companies() {
       {data?.nextCursor && (
         <div className="flex justify-center pt-2">
           <button
-            onClick={() => setCursor(data.nextCursor!)}
+            onClick={handleLoadMore}
             className="px-4 py-2 bg-white/5 border border-white/10 rounded-full text-sm text-fg-muted hover:text-fg-default hover:bg-white/10 transition-colors"
           >
             Load More
