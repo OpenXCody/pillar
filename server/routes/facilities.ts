@@ -64,6 +64,7 @@ facilitiesRouter.get('/', async (req, res) => {
       data: data.map(f => ({
         ...f,
         sources: f.sources ? JSON.parse(f.sources) : [],
+        faaApprovalTypes: f.faaApprovalTypes ? JSON.parse(f.faaApprovalTypes) : null,
         exportedToArchangel: f.exportedToArchangel === 1,
       })),
       nextCursor,
@@ -186,6 +187,7 @@ facilitiesRouter.patch('/:id', async (req, res) => {
       facility: {
         ...updated,
         sources: updated.sources ? JSON.parse(updated.sources) : [],
+        faaApprovalTypes: updated.faaApprovalTypes ? JSON.parse(updated.faaApprovalTypes) : null,
         exportedToArchangel: updated.exportedToArchangel === 1,
         facilitySources: sourceLinks.map(s => ({
           ...s,
@@ -220,6 +222,7 @@ facilitiesRouter.get('/:id', async (req, res) => {
     res.json({
       ...facility,
       sources: facility.sources ? JSON.parse(facility.sources) : [],
+      faaApprovalTypes: facility.faaApprovalTypes ? JSON.parse(facility.faaApprovalTypes) : null,
       exportedToArchangel: facility.exportedToArchangel === 1,
       facilitySources: sourceLinks.map(s => ({
         ...s,

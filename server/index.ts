@@ -8,6 +8,7 @@ import { reviewRouter } from './routes/review.js';
 import { exportRouter } from './routes/export.js';
 import { statsRouter } from './routes/stats.js';
 import { pipelineRouter } from './routes/pipeline.js';
+import { statesRouter } from './routes/states.js';
 
 const app = express();
 const PORT = parseInt(process.env.PORT || '3001', 10);
@@ -23,6 +24,7 @@ app.use('/api/review', reviewRouter);
 app.use('/api/export', exportRouter);
 app.use('/api/stats', statsRouter);
 app.use('/api/pipeline', pipelineRouter);
+app.use('/api/states', statesRouter);
 
 // Health check
 app.get('/api/health', (_req, res) => {

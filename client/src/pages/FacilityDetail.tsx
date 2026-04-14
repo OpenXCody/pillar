@@ -26,7 +26,7 @@ function formatCST(dateStr: string): string {
 
 /** Determine badge style for a source entry */
 function getSourceBadge(source: string, sourceRecordId: string | null): { label: string; className: string } {
-  const FEDERAL = ['epa_echo', 'epa_tri', 'osha', 'usda_fsis'];
+  const FEDERAL = ['epa_echo', 'epa_tri', 'osha', 'usda_fsis', 'faa', 'nhtsa'];
   if (FEDERAL.includes(source)) {
     return { label: 'Federal', className: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20' };
   }
@@ -40,9 +40,28 @@ function getSourceBadge(source: string, sourceRecordId: string | null): { label:
   return { label: 'Unknown', className: 'bg-white/5 text-fg-soft border-white/10' };
 }
 
+/** FAA Approval Type tooltips */
+const FAA_APPROVAL_INFO: Record<string, { label: string; description: string; color: string }> = {
+  PC: {
+    label: 'PC',
+    description: 'Production Certificate — OEM authorized to manufacture type-certificated aircraft, engines, or propellers',
+    color: 'sky',
+  },
+  PMA: {
+    label: 'PMA',
+    description: 'Parts Manufacturer Approval — Authorized to produce replacement or modification parts for aircraft',
+    color: 'emerald',
+  },
+  TSOA: {
+    label: 'TSOA',
+    description: 'Technical Standard Order Authorization — Produces instruments, equipment, or components meeting FAA performance standards',
+    color: 'amber',
+  },
+};
+
 /** Display name for a source */
 function getSourceDisplayName(source: string, sourceRecordId: string | null): string {
-  const FEDERAL = ['epa_echo', 'epa_tri', 'osha', 'usda_fsis'];
+  const FEDERAL = ['epa_echo', 'epa_tri', 'osha', 'usda_fsis', 'faa', 'nhtsa'];
   if (FEDERAL.includes(source)) {
     return DATA_SOURCES[source as keyof typeof DATA_SOURCES]?.name ?? source;
   }
@@ -229,7 +248,38 @@ export default function FacilityDetail() {
           </div>
         ) : (
           <>
-            <h2 className="text-xl font-semibold text-fg-default">{facility.name}</h2>
+            <div className="flex items-start gap-3 flex-wrap">
+              <h2 className="text-xl font-semibold text-fg-default">{facility.name}</h2>
+              {facility.faaApprovalTypes && facility.faaApprovalTypes.length > 0 && (
+                <div className="flex items-center gap-1.5 mt-1">
+                  {facility.faaApprovalTypes.map((type: string) => {
+                    const info = FAA_APPROVAL_INFO[type];
+                    if (!info) return null;
+                    return (
+                      <span
+                        key={type}
+                        title={info.description}
+                        className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full border cursor-help ${
+                          info.color === 'sky' ? 'bg-sky-500/10 text-sky-400 border-sky-500/20' :
+                          info.color === 'emerald' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
+                          'bg-amber-500/10 text-amber-400 border-amber-500/20'
+                        }`}
+                      >
+                        FAA {info.label}
+                      </span>
+                    );
+                  })}
+                </div>
+              )}
+              {facility.nhtsaMfrId && (
+                <span
+                  title="Registered manufacturer in the NHTSA Vehicle Product Information Catalog"
+                  className="text-[10px] font-medium px-1.5 py-0.5 rounded-full border bg-orange-500/10 text-orange-400 border-orange-500/20 cursor-help mt-1"
+                >
+                  NHTSA Registered
+                </span>
+              )}
+            </div>
             {facility.companyName && (
               <p className="text-sm text-fg-muted mt-1 flex items-center gap-1.5">
                 <Building2 className="w-3.5 h-3.5 text-amber-500" /> {facility.companyName}
@@ -366,7 +416,7 @@ export default function FacilityDetail() {
               const sourceInfo = DATA_SOURCES[fs.source];
               const badge = getSourceBadge(fs.source, fs.sourceRecordId);
               const displayName = getSourceDisplayName(fs.source, fs.sourceRecordId);
-              const isFederal = ['epa_echo', 'epa_tri', 'osha', 'usda_fsis'].includes(fs.source);
+              const isFederal = ['epa_echo', 'epa_tri', 'osha', 'usda_fsis', 'faa', 'nhtsa'].includes(fs.source);
               const isHumanEdit = fs.source === 'manual' && fs.sourceRecordId?.startsWith('openx_edit_');
 
               return (

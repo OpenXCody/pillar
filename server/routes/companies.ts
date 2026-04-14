@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { db } from '../db/index.js';
 import { companies, facilities } from '../db/schema.js';
-import { eq, ilike, and, gt, desc, sql, count } from 'drizzle-orm';
+import { eq, ilike, and, desc, sql, count } from 'drizzle-orm';
 
 export const companiesRouter = Router();
 
@@ -76,6 +76,42 @@ companiesRouter.get('/:id', async (req, res) => {
       .where(eq(facilities.companyId, company.id))
       .orderBy(facilities.name);
 
+    // Compute state breakdown
+    const stateCounts: Record<string, number> = {};
+    const naicsCounts: Record<string, { description: string | null; count: number }> = {};
+    const sourceCounts: Record<string, number> = {};
+
+    for (const f of linkedFacilities) {
+      // State
+      if (f.state) {
+        stateCounts[f.state] = (stateCounts[f.state] || 0) + 1;
+      }
+      // NAICS
+      if (f.primaryNaics) {
+        if (!naicsCounts[f.primaryNaics]) {
+          naicsCounts[f.primaryNaics] = { description: f.primaryNaicsDescription, count: 0 };
+        }
+        naicsCounts[f.primaryNaics].count += 1;
+      }
+      // Sources
+      const fSources: string[] = f.sources ? JSON.parse(f.sources) : [];
+      for (const src of fSources) {
+        sourceCounts[src] = (sourceCounts[src] || 0) + 1;
+      }
+    }
+
+    const stateBreakdown = Object.entries(stateCounts)
+      .map(([state, count]) => ({ state, count }))
+      .sort((a, b) => b.count - a.count);
+
+    const naicsBreakdown = Object.entries(naicsCounts)
+      .map(([code, { description, count }]) => ({ code, description, count }))
+      .sort((a, b) => b.count - a.count);
+
+    const sourceBreakdown = Object.entries(sourceCounts)
+      .map(([source, count]) => ({ source, count }))
+      .sort((a, b) => b.count - a.count);
+
     res.json({
       ...company,
       facilities: linkedFacilities.map(f => ({
@@ -83,6 +119,9 @@ companiesRouter.get('/:id', async (req, res) => {
         sources: f.sources ? JSON.parse(f.sources) : [],
         exportedToArchangel: f.exportedToArchangel === 1,
       })),
+      stateBreakdown,
+      naicsBreakdown,
+      sourceBreakdown,
     });
   } catch (err) {
     console.error('Error fetching company:', err);

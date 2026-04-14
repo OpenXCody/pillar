@@ -14,7 +14,6 @@
 import { createWriteStream, createReadStream } from 'fs';
 import { mkdir, unlink, stat } from 'fs/promises';
 import { pipeline } from 'stream/promises';
-import { createUnzip } from 'zlib';
 import path from 'path';
 import Papa from 'papaparse';
 import { db } from '../../db/index.js';

@@ -72,7 +72,7 @@ export async function runMatching(runId: string): Promise<MatchResult> {
     const matchBatch: (typeof matchCandidates.$inferInsert)[] = [];
 
     // Process each block
-    for (const [blockKey, indices] of blocks) {
+    for (const [, indices] of blocks) {
       if (indices.length < 2) continue;
       if (indices.length > MAX_BLOCK_SIZE) {
         // Skip overly generic blocks — they'll match through more specific blocks

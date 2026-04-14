@@ -173,7 +173,7 @@ export default function Companies() {
             return (
               <div
                 key={c.id}
-                onClick={() => navigate(`/facilities?company=${encodeURIComponent(c.name)}`)}
+                onClick={() => navigate(`/companies/${c.id}`)}
                 className="
                   group block p-4
                   bg-white/[0.02] backdrop-blur-sm

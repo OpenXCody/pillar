@@ -1,4 +1,4 @@
-export type DataSource = 'epa_echo' | 'epa_tri' | 'osha' | 'usda_fsis' | 'manual';
+export type DataSource = 'epa_echo' | 'epa_tri' | 'osha' | 'usda_fsis' | 'faa' | 'nhtsa' | 'manual';
 export type RunStatus = 'pending' | 'fetching' | 'normalizing' | 'matching' | 'merging' | 'completed' | 'failed';
 export type MatchStatus = 'pending' | 'confirmed' | 'rejected' | 'auto_matched';
 export type MatchType = 'geo_name' | 'address_exact' | 'frs_id' | 'cross_source';
@@ -36,6 +36,18 @@ export const DATA_SOURCES: Record<DataSource, SourceInfo> = {
     description: 'Meat, poultry, and egg processing plant directory',
     color: '#F87171',
   },
+  faa: {
+    key: 'faa',
+    name: 'FAA PAH',
+    description: 'Production Approval Holders — PC, PMA, and TSOA certified manufacturers',
+    color: '#38BDF8',
+  },
+  nhtsa: {
+    key: 'nhtsa',
+    name: 'NHTSA',
+    description: 'Registered vehicle and equipment manufacturers from the vPIC database',
+    color: '#FB923C',
+  },
   manual: {
     key: 'manual',
     name: 'Open X',
@@ -61,6 +73,9 @@ export interface Company {
 
 export interface CompanyDetail extends Company {
   facilities: Facility[];
+  stateBreakdown: { state: string; count: number }[];
+  naicsBreakdown: { code: string; description: string | null; count: number }[];
+  sourceBreakdown: { source: DataSource; count: number }[];
 }
 
 export interface Facility {
@@ -82,6 +97,8 @@ export interface Facility {
   sources: DataSource[];
   confidence: number;
   epaRegistryId: string | null;
+  faaApprovalTypes: string[] | null;
+  nhtsaMfrId: string | null;
   exportedToArchangel: boolean;
   createdAt: string;
   updatedAt: string;
@@ -170,6 +187,17 @@ export interface PaginatedResponse<T> {
   data: T[];
   nextCursor: string | null;
   total?: number;
+}
+
+export interface StateDetail {
+  code: string;
+  name: string;
+  totalFacilities: number;
+  totalCompanies: number;
+  topNaics: { code: string | null; description: string | null; count: number }[];
+  topCompanies: { id: string; name: string; count: number }[];
+  bySource: Record<string, number>;
+  topCities: { city: string; count: number }[];
 }
 
 export interface StatsOverview {

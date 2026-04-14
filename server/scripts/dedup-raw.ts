@@ -11,7 +11,7 @@ async function main() {
   console.log(`Records before: ${before[0].count}`);
 
   // Find and delete duplicates (keep the one with the smallest id)
-  const result = await sql`
+  await sql`
     DELETE FROM raw_records
     WHERE id IN (
       SELECT id FROM (

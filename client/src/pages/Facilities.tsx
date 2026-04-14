@@ -186,7 +186,16 @@ export default function Facilities() {
 
                   <div className="flex items-center gap-3 mt-1.5 flex-wrap">
                     {f.companyName && (
-                      <span className="flex items-center gap-1 text-xs text-fg-muted">
+                      <span
+                        className="flex items-center gap-1 text-xs text-fg-muted hover:text-amber-400 transition-colors"
+                        onClick={(e) => {
+                          if (f.companyId) {
+                            e.stopPropagation();
+                            navigate(`/companies/${f.companyId}`);
+                          }
+                        }}
+                        role={f.companyId ? 'link' : undefined}
+                      >
                         <Building2 className="w-3 h-3 text-amber-500" />
                         {f.companyName}
                       </span>

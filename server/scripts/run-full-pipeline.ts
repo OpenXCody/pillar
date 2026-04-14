@@ -18,13 +18,14 @@ async function main() {
   console.log('--- Step 1: Fetching EPA ECHO ---');
   const [echoRun] = await db.insert(sourceRuns).values({ source: 'epa_echo', status: 'fetching' }).returning();
   const echoResult = await fetchEcho(echoRun.id);
-  console.log(`  ECHO: ${echoResult.totalFetched} total, ${echoResult.inserted} inserted in ${(echoResult.durationMs / 1000).toFixed(1)}s`);
+  const echoDuration = Date.now() - startTime;
+  console.log(`  ECHO: ${echoResult.manufacturingCount} manufacturing, ${echoResult.inserted} inserted in ${(echoDuration / 1000).toFixed(1)}s`);
   await db.update(sourceRuns).set({
     status: 'completed',
-    totalFetched: echoResult.totalFetched,
+    totalFetched: echoResult.manufacturingCount,
     newRecords: echoResult.inserted,
     completedAt: new Date(),
-    durationMs: echoResult.durationMs,
+    durationMs: echoDuration,
   }).where(sql`${sourceRuns.id} = ${echoRun.id}`);
 
   // Step 2: Import seed data (if CSV exists)

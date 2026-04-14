@@ -10,6 +10,8 @@ import { sourceRuns } from '../db/schema.js';
 import { eq } from 'drizzle-orm';
 import { fetchEcho } from './fetch/echoConnector.js';
 import { fetchTri } from './fetch/triConnector.js';
+import { fetchFaa } from './fetch/faaConnector.js';
+import { fetchNhtsa } from './fetch/nhtsaConnector.js';
 import { runMatching } from './match/matcher.js';
 import { runMerge } from './merge/merger.js';
 import type { DataSource } from '@shared/types.js';
@@ -86,24 +88,38 @@ export async function runPipeline(source: DataSource): Promise<PipelineResult> {
     stageLabel = 'Downloading records...';
     console.log(`[Pipeline] Stage 1: Fetching ${source}...`);
 
-    let fetchResult;
+    let totalFetched = 0;
+    let inserted = 0;
+
     if (source === 'epa_echo') {
-      fetchResult = await fetchEcho(run.id);
+      const echoResult = await fetchEcho(run.id);
+      totalFetched = echoResult.manufacturingCount;
+      inserted = echoResult.inserted;
     } else if (source === 'epa_tri') {
-      fetchResult = await fetchTri(run.id);
+      const triResult = await fetchTri(run.id);
+      totalFetched = triResult.totalFetched;
+      inserted = triResult.inserted;
+    } else if (source === 'faa') {
+      const faaResult = await fetchFaa(run.id);
+      totalFetched = faaResult.totalFetched;
+      inserted = faaResult.inserted;
+    } else if (source === 'nhtsa') {
+      const nhtsaResult = await fetchNhtsa(run.id);
+      totalFetched = nhtsaResult.totalFetched;
+      inserted = nhtsaResult.inserted;
     } else {
       throw new Error(`Source connector not implemented: ${source}`);
     }
 
     result.stages.fetch = {
-      totalFetched: fetchResult.totalFetched,
-      inserted: fetchResult.inserted,
+      totalFetched,
+      inserted,
     };
 
     // Stage 2: Match
     currentStage = 'matching';
     stageProgress = 40;
-    stageLabel = `Fetched ${fetchResult.totalFetched.toLocaleString()} records. Matching...`;
+    stageLabel = `Fetched ${totalFetched.toLocaleString()} records. Matching...`;
     console.log(`[Pipeline] Stage 2: Matching...`);
     await db.update(sourceRuns).set({ status: 'matching' }).where(eq(sourceRuns.id, run.id));
 

@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { db } from '../db/index.js';
 import { matchCandidates, rawRecords } from '../db/schema.js';
-import { eq, count, and, gt, desc, sql, inArray } from 'drizzle-orm';
+import { eq, count, and, gt, desc, sql } from 'drizzle-orm';
 
 export const reviewRouter = Router();
 

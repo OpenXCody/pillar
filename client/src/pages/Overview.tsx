@@ -72,11 +72,12 @@ export default function Overview() {
             View all <ArrowRight className="w-3 h-3" />
           </button>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
           {Object.values(DATA_SOURCES).filter(s => s.key !== 'manual').map(source => {
             const recordCount = stats?.bySource[source.key] ?? 0;
+            const isActive = source.key === 'epa_echo' || source.key === 'epa_tri' || source.key === 'faa' || source.key === 'nhtsa';
+            const isV2 = !isActive && source.key !== 'manual';
             const isSynced = !isLoading && recordCount > 0;
-            const isV2 = source.key === 'osha' || source.key === 'usda_fsis';
             const isSyncing = pipelineStatus?.running && pipelineStatus.currentSource === source.key;
             return (
               <div
@@ -159,7 +160,7 @@ export default function Overview() {
               return (
                 <div
                   key={state}
-                  onClick={() => navigate(`/facilities?state=${state}`)}
+                  onClick={() => navigate(`/states/${state}`)}
                   className="flex items-center gap-3 cursor-pointer hover:bg-white/[0.03] rounded-lg px-1 py-0.5 -mx-1 transition-colors group"
                 >
                   <span className="text-xs text-fg-muted w-6 font-mono group-hover:text-indigo-400 transition-colors">{state}</span>

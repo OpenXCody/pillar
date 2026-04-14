@@ -4,7 +4,7 @@ import { relations } from 'drizzle-orm';
 // ─── Enums ───────────────────────────────────────────────────────────
 
 export const dataSourceEnum = pgEnum('data_source', [
-  'epa_echo', 'epa_tri', 'osha', 'usda_fsis', 'manual',
+  'epa_echo', 'epa_tri', 'osha', 'usda_fsis', 'faa', 'nhtsa', 'manual',
 ]);
 
 export const runStatusEnum = pgEnum('run_status', [
@@ -91,6 +91,15 @@ export const rawRecords = pgTable('raw_records', {
   fsisActivities: text('fsis_activities'),
   fsisSizeCategory: text('fsis_size_category'),
 
+  // FAA fields
+  faaApprovalType: text('faa_approval_type'),  // PC, PMA, TSOA
+  faaCertNumber: text('faa_cert_number'),
+  faaHolderNumber: text('faa_holder_number'),
+
+  // NHTSA fields
+  nhtsaMfrId: text('nhtsa_mfr_id'),
+  nhtsaVehicleTypes: text('nhtsa_vehicle_types'),
+
   // Linkage to golden record
   facilityId: uuid('facility_id').references(() => facilities.id, { onDelete: 'set null' }),
 
@@ -163,6 +172,9 @@ export const facilities = pgTable('facilities', {
   parentCompanyFromTri: text('parent_company_from_tri'),
   fsisEstNumber: text('fsis_est_number'),
   fsisSizeCategory: text('fsis_size_category'),
+
+  faaApprovalTypes: text('faa_approval_types'),    // JSON array: ["PC","PMA","TSOA"]
+  nhtsaMfrId: text('nhtsa_mfr_id'),
 
   sourceCount: integer('source_count').default(1).notNull(),
   sources: text('sources'),

@@ -7,7 +7,7 @@
 
 import { db } from '../../db/index.js';
 import { rawRecords, facilities, companies, facilitySources, matchCandidates } from '../../db/schema.js';
-import { eq, sql, inArray } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { selectBestValue } from './fieldPriority.js';
 import { resolveCompanyName, normalizeFacilityName } from '../normalize/nameNormalizer.js';
 import { describeNaics } from '../normalize/naicsLookup.js';
@@ -373,31 +373,6 @@ function buildMatchClusters(matches: { recordAId: string; recordBId: string }[])
 }
 
 /**
- * Find or create a company record.
- */
-async function findOrCreateCompany(name: string, result: MergeResult): Promise<string> {
-  const [existing] = await db.select().from(companies)
-    .where(eq(companies.name, name))
-    .limit(1);
-
-  if (existing) {
-    // Increment facility count
-    await db.update(companies)
-      .set({ facilityCount: sql`${companies.facilityCount} + 1` })
-      .where(eq(companies.id, existing.id));
-    return existing.id;
-  }
-
-  const [created] = await db.insert(companies).values({
-    name,
-    facilityCount: 1,
-  }).returning();
-
-  result.companiesCreated++;
-  return created.id;
-}
-
-/**
  * Compute confidence score based on data quality signals.
  */
 function computeConfidence(recordCount: number, sourceCount: number, hasCoordinates: boolean): number {
@@ -432,5 +407,7 @@ function getFieldsProvided(record: typeof rawRecords.$inferSelect): string[] {
   if (record.rawNaicsCode) fields.push('naics');
   if (record.triParentCompanyName) fields.push('company');
   if (record.oshaEmployeeCount) fields.push('employees');
+  if (record.faaApprovalType) fields.push('faaApprovalType');
+  if (record.nhtsaMfrId) fields.push('nhtsaMfrId');
   return fields;
 }

@@ -72,3 +72,7 @@ export const pipelineApi = {
   status: () =>
     apiFetch<{ running: boolean; currentStage: string | null; currentSource: string | null; stageProgress: number; stageLabel: string | null; elapsedMs: number | null }>('/pipeline/status'),
 };
+
+export const statesApi = {
+  detail: (code: string) => apiFetch<import('@shared/types').StateDetail>(`/states/${code}`),
+};
