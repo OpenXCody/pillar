@@ -76,7 +76,7 @@ export default function Facilities() {
     <div className="space-y-5">
       <div>
         <h2 className="text-xl font-semibold text-fg-default">Factories</h2>
-        <p className="text-sm text-fg-muted mt-1">Golden records — deduplicated US manufacturing factories</p>
+        <p className="text-sm text-fg-muted mt-1">US manufacturing facilities with location, company, coordinates, and industry classification</p>
       </div>
 
       {/* Search + Filters */}
@@ -112,7 +112,7 @@ export default function Facilities() {
           value={naicsFilter}
           onChange={v => setFilter('naics', v)}
           placeholder="Filter by category..."
-          icon={<Factory className="w-3.5 h-3.5 text-fg-soft flex-shrink-0" />}
+          icon={<Factory className="w-3.5 h-3.5 text-indigo-400 flex-shrink-0" />}
           accentColor="indigo"
         />
       </div>
@@ -173,8 +173,8 @@ export default function Facilities() {
             >
               <div className="flex items-start gap-4">
                 {/* Icon */}
-                <div className="w-9 h-9 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center flex-shrink-0">
-                  <Factory className="w-4 h-4 text-fg-soft" />
+                <div className="w-9 h-9 rounded-lg bg-sky-400/10 border border-sky-400/20 flex items-center justify-center flex-shrink-0">
+                  <Factory className="w-4 h-4 text-sky-400" />
                 </div>
 
                 {/* Content */}
