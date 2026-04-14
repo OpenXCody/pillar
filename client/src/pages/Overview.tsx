@@ -142,8 +142,7 @@ function DashboardTab() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
           {Object.values(DATA_SOURCES).filter(s => s.key !== 'manual').map(source => {
             const recordCount = stats?.bySource[source.key] ?? 0;
-            const isActive = source.key === 'epa_echo' || source.key === 'epa_tri' || source.key === 'faa' || source.key === 'nhtsa' || source.key === 'sam_gov' || source.key === 'sec_edgar';
-            const isV2 = !isActive && source.key !== 'manual';
+            const isV2 = false;
             const isSynced = !isLoading && recordCount > 0;
             const isSyncing = pipelineStatus?.running && pipelineStatus.currentSource === source.key;
             return (

@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { sourcesApi, pipelineApi } from '@/lib/api';
 import { DATA_SOURCES } from '@shared/types';
-import { Clock, CheckCircle2, XCircle, Loader2, Shield, AlertCircle, Plane, Car, BarChart3 } from 'lucide-react';
+import { Clock, CheckCircle2, XCircle, Loader2, Shield, AlertCircle, Plane, BarChart3 } from 'lucide-react';
 
 function formatCST(dateStr: string): string {
   const d = new Date(dateStr);
@@ -44,7 +44,7 @@ export default function Sources() {
   const v2Sources = Object.values(DATA_SOURCES).filter(s => s.key === 'osha' || s.key === 'usda_fsis');
   const manualSource = DATA_SOURCES.manual;
   const isPipelineRunning = pipelineStatus?.running ?? false;
-  const activeSources = ['epa_echo', 'epa_tri', 'faa', 'nhtsa', 'sam_gov', 'sec_edgar', 'census_cbp'];
+  const activeSources = ['epa_echo', 'epa_tri', 'faa', 'nhtsa', 'sam_gov', 'sec_edgar', 'census_cbp', 'osha', 'usda_fsis'];
 
   return (
     <div className="space-y-6">
@@ -124,11 +124,11 @@ export default function Sources() {
         fetchMutation={fetchMutation}
       />
 
-      {/* V2 Sources */}
+      {/* Workforce & Safety Sources */}
       <SourceGroup
-        icon={<Car className="w-4 h-4 text-amber-400" />}
+        icon={<Shield className="w-4 h-4 text-amber-400" />}
         title="Workforce & Safety"
-        badge={{ label: 'V2', className: 'bg-white/5 text-fg-soft border-white/10' }}
+        badge={{ label: 'Federal', className: 'bg-emerald-500/10 text-emerald-400/80 border-emerald-500/20' }}
         sources={v2Sources}
         activeSources={activeSources}
         data={data}
@@ -136,7 +136,6 @@ export default function Sources() {
         isPipelineRunning={isPipelineRunning}
         pipelineStatus={pipelineStatus}
         fetchMutation={fetchMutation}
-        isV2Group
       />
 
       {/* Partner / Manual Sources */}
@@ -170,7 +169,7 @@ export default function Sources() {
 }
 
 /** Reusable source group component */
-function SourceGroup({ icon, title, badge, sources, activeSources, data, isLoading, isPipelineRunning, pipelineStatus, fetchMutation, isV2Group }: {
+function SourceGroup({ icon, title, badge, sources, activeSources, data, isLoading, isPipelineRunning, pipelineStatus, fetchMutation }: {
   icon: React.ReactNode;
   title: string;
   badge: { label: string; className: string };
@@ -181,7 +180,7 @@ function SourceGroup({ icon, title, badge, sources, activeSources, data, isLoadi
   isPipelineRunning: boolean;
   pipelineStatus: { running: boolean; currentSource: string | null; stageProgress: number; stageLabel: string | null; elapsedMs: number | null } | undefined;
   fetchMutation: { mutate: (source: string) => void };
-  isV2Group?: boolean;
+
 }) {
   return (
     <div>
@@ -196,7 +195,7 @@ function SourceGroup({ icon, title, badge, sources, activeSources, data, isLoadi
           const recordCount = info?.rawRecordCount ?? 0;
           const isSyncing = isPipelineRunning && pipelineStatus?.currentSource === source.key;
           const isActive = activeSources.includes(source.key);
-          const isV2 = isV2Group ?? false;
+          const isV2 = false;
           const isSynced = recordCount > 0 && lastRun?.status === 'completed';
 
           return (
