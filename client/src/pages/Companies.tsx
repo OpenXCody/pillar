@@ -1,48 +1,22 @@
 import { useState, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { companiesApi } from '@/lib/api';
 import { Search, Building2, Factory, X, ShieldCheck, AlertCircle, Ban } from 'lucide-react';
-import type { CompanyStatus, Company } from '@shared/types';
+import type { Company } from '@shared/types';
+import { getCategoryLabel } from '@shared/naics';
 
-function formatCount(n: number): string {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
-  return String(n);
-}
-
-const STATUS_CONFIG: Record<CompanyStatus, { label: string; color: string; bg: string; border: string; icon: typeof ShieldCheck }> = {
-  verified: {
-    label: 'Verified',
-    color: 'text-emerald-400',
-    bg: 'bg-emerald-500/10',
-    border: 'border-emerald-500/20',
-    icon: ShieldCheck,
-  },
-  unverified: {
-    label: 'Needs Review',
-    color: 'text-amber-400',
-    bg: 'bg-amber-500/10',
-    border: 'border-amber-500/20',
-    icon: AlertCircle,
-  },
-  rejected: {
-    label: 'Rejected',
-    color: 'text-red-400',
-    bg: 'bg-red-500/10',
-    border: 'border-red-500/20',
-    icon: Ban,
-  },
-};
-
-type TabKey = 'all' | CompanyStatus;
+const STATUS_CONFIG = {
+  verified: { label: 'Verified', color: 'text-emerald-400', icon: ShieldCheck },
+  unverified: { label: 'Needs Review', color: 'text-amber-400', icon: AlertCircle },
+  rejected: { label: 'Rejected', color: 'text-red-400', icon: Ban },
+} as const;
 
 export default function Companies() {
   const navigate = useNavigate();
-  const [search, setSearch] = useState('');
+  const [searchParams] = useSearchParams();
+  const [search, setSearch] = useState(searchParams.get('search') || '');
   const [cursor, setCursor] = useState<string | undefined>();
-  const [activeTab, setActiveTab] = useState<TabKey>('verified');
-  // Accumulate pages so "Load More" appends instead of replacing
   const [prevPages, setPrevPages] = useState<Company[]>([]);
 
   const { data: stats } = useQuery({
@@ -51,30 +25,16 @@ export default function Companies() {
   });
 
   const { data, isLoading } = useQuery({
-    queryKey: ['companies', { search, cursor, status: activeTab }],
+    queryKey: ['companies', { search, cursor }],
     queryFn: () => companiesApi.list({
       search: search || undefined,
-      status: activeTab === 'all' ? undefined : activeTab,
       cursor,
       limit: 50,
     }),
   });
 
-  // Combine previously loaded pages with current page
   const displayItems = [...prevPages, ...(data?.data ?? [])];
   const totalCompanies = stats ? stats.verified + stats.unverified + stats.rejected : 0;
-
-  const tabs: { key: TabKey; label: string; count: number | null }[] = [
-    { key: 'verified', label: 'Verified', count: stats?.verified ?? null },
-    { key: 'unverified', label: 'Needs Review', count: stats?.unverified ?? null },
-    { key: 'all', label: 'All', count: totalCompanies || null },
-  ];
-
-  function handleTabChange(tab: TabKey) {
-    setActiveTab(tab);
-    setCursor(undefined);
-    setPrevPages([]);
-  }
 
   function handleSearch(value: string) {
     setSearch(value);
@@ -94,35 +54,8 @@ export default function Companies() {
       <div>
         <h2 className="text-xl font-semibold text-fg-default">Companies</h2>
         <p className="text-sm text-fg-muted mt-1">
-          Parent companies resolved from factory data — verified when linked to factories
+          {totalCompanies > 0 ? `${totalCompanies.toLocaleString()} parent companies` : 'Parent companies'} resolved from factory data
         </p>
-      </div>
-
-      {/* Status tabs */}
-      <div className="flex items-center gap-1 bg-white/[0.02] border border-white/5 rounded-xl p-1">
-        {tabs.map(tab => (
-          <button
-            key={tab.key}
-            onClick={() => handleTabChange(tab.key)}
-            className={`
-              flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all
-              ${activeTab === tab.key
-                ? 'bg-white/10 text-fg-default'
-                : 'text-fg-soft hover:text-fg-muted hover:bg-white/[0.03]'
-              }
-            `}
-          >
-            {tab.label}
-            {tab.count !== null && (
-              <span className={`
-                text-[11px] px-1.5 py-0.5 rounded-full
-                ${activeTab === tab.key ? 'bg-white/10 text-fg-muted' : 'bg-white/5 text-fg-soft'}
-              `}>
-                {formatCount(tab.count)}
-              </span>
-            )}
-          </button>
-        ))}
       </div>
 
       {/* Search */}
@@ -134,8 +67,7 @@ export default function Companies() {
             placeholder="Search companies..."
             value={search}
             onChange={e => handleSearch(e.target.value)}
-            className="flex-1 text-sm text-fg-default placeholder:text-fg-soft bg-transparent"
-            style={{ outline: 'none', border: 'none' }}
+            className="flex-1 text-sm text-fg-default placeholder:text-fg-soft bg-transparent outline-none"
           />
           {search && (
             <button onClick={() => handleSearch('')} className="p-0.5 text-fg-soft hover:text-fg-muted">
@@ -148,7 +80,7 @@ export default function Companies() {
       {/* Results count */}
       {displayItems.length > 0 && (
         <p className="text-xs text-fg-soft">
-          Showing {displayItems.length} companies{data?.nextCursor ? '+' : ''}
+          Showing {displayItems.length.toLocaleString()} companies{data?.nextCursor ? '+' : ''}
         </p>
       )}
 
@@ -160,64 +92,49 @@ export default function Companies() {
           <div className="text-center py-12">
             <Building2 className="w-10 h-10 text-fg-soft mx-auto mb-3" />
             <p className="text-sm text-fg-muted">No companies found</p>
-            <p className="text-xs text-fg-soft mt-1">
-              {activeTab === 'unverified'
-                ? 'All companies have been reviewed or have factory ties.'
-                : 'Companies are resolved from factory data during pipeline runs.'}
-            </p>
           </div>
         ) : (
           displayItems.map((c: Company) => {
             const statusCfg = STATUS_CONFIG[c.status || 'unverified'];
             const StatusIcon = statusCfg.icon;
+            let tickerBadge: string | null = null;
+            try {
+              const nv = c.nameVariants ? (typeof c.nameVariants === 'string' ? JSON.parse(c.nameVariants) : c.nameVariants) : null;
+              if (nv?.ticker) tickerBadge = nv.ticker;
+            } catch { /* ignore */ }
+
             return (
               <div
                 key={c.id}
                 onClick={() => navigate(`/companies/${c.id}`)}
-                className="
-                  group block p-4
-                  bg-white/[0.02] backdrop-blur-sm
-                  border border-white/5 rounded-xl
-                  hover:bg-white/[0.05] hover:border-white/10
-                  transition-all duration-200 cursor-pointer
-                "
+                className="group block p-4 bg-white/[0.02] backdrop-blur-sm border border-white/5 rounded-xl hover:bg-white/[0.05] hover:border-white/10 transition-all duration-200 cursor-pointer"
               >
                 <div className="flex items-center gap-4">
-                  {/* Icon */}
                   <div className="w-9 h-9 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center flex-shrink-0">
                     <Building2 className="w-4 h-4 text-amber-500" />
                   </div>
 
-                  {/* Content */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <h3 className="text-sm font-medium text-fg-default truncate">{c.name}</h3>
-                      {/* Status icon with tooltip */}
                       <span className="relative group/tip flex-shrink-0">
                         <StatusIcon className={`w-3.5 h-3.5 ${statusCfg.color}`} />
                         <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 px-2 py-1 text-[10px] text-fg-default bg-bg-elevated border border-border-subtle rounded-md whitespace-nowrap opacity-0 pointer-events-none group-hover/tip:opacity-100 transition-opacity z-10">{statusCfg.label}</span>
                       </span>
                     </div>
                     <div className="flex items-center gap-2 mt-1">
-                      <span className="text-xs text-fg-muted truncate">{c.sector || 'Manufacturing'}</span>
-                      {(() => {
-                        try {
-                          const nv = c.nameVariants ? (typeof c.nameVariants === 'string' ? JSON.parse(c.nameVariants) : c.nameVariants) : null;
-                          if (nv?.ticker) return (
-                            <span className="text-[10px] font-mono text-indigo-400 bg-indigo-500/10 px-1 py-0.5 rounded flex-shrink-0">
-                              {nv.ticker}
-                            </span>
-                          );
-                        } catch { /* ignore */ }
-                        return null;
-                      })()}
+                      <span className="text-xs text-fg-muted truncate">{c.sector || getCategoryLabel(null)}</span>
+                      {tickerBadge && (
+                        <span className="text-[10px] font-mono text-indigo-400 bg-indigo-500/10 px-1 py-0.5 rounded flex-shrink-0">
+                          {tickerBadge}
+                        </span>
+                      )}
                     </div>
                   </div>
 
-                  {/* Factory count */}
-                  <div className="flex items-center gap-1.5 flex-shrink-0">
-                    <Factory className="w-3.5 h-3.5 text-sky-400" />
-                    <span className="text-xs text-fg-muted">{formatCount(c.facilityCount)}</span>
+                  <div className="flex items-center gap-1 text-xs text-fg-muted flex-shrink-0">
+                    <Factory className="w-3.5 h-3.5 text-fg-soft" />
+                    {c.facilityCount.toLocaleString()}
                   </div>
                 </div>
               </div>

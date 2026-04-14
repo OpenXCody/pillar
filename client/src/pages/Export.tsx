@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { exportApi, statsApi } from '../lib/api';
+import { exportApi, statsApi, companiesApi } from '../lib/api';
 import { Download, FileDown, Check, Clock, AlertCircle, Factory, Building2, MapPin, BarChart3, Search } from 'lucide-react';
 import { US_STATES } from '@shared/states';
 import { INDUSTRY_CATEGORIES } from '@shared/naics';
@@ -40,7 +40,6 @@ export default function Export() {
     minFacilities: 1,
     companies: [],
   });
-  const [companySearch, setCompanySearch] = useState('');
 
   // Factory exports always require company + coordinates
   const previewParams = {
@@ -90,7 +89,6 @@ export default function Export() {
 
   const clearFilters = () => {
     setFilters({ states: [], naicsPrefix: '', minConfidence: 0, minFacilities: 1, companies: [] });
-    setCompanySearch('');
   };
 
   const previewCount = exportType === 'factory'
@@ -191,33 +189,12 @@ export default function Export() {
           )}
         </div>
 
-        {/* Company tag input */}
-        <div>
-          <div className="flex items-center gap-2 bg-white/[0.02] border border-white/10 rounded-xl px-3 py-2 max-w-lg">
-            <Search className="w-3.5 h-3.5 text-indigo-400 flex-shrink-0" />
-            <div className="flex items-center gap-1.5 flex-wrap flex-1">
-              {filters.companies.map(c => (
-                <span key={c} className="px-2 py-0.5 bg-white/5 text-fg-muted text-xs rounded flex items-center gap-1 border border-white/10">
-                  {c}
-                  <button onClick={() => setFilters(f => ({ ...f, companies: f.companies.filter(x => x !== c) }))} className="hover:text-fg-default">&times;</button>
-                </span>
-              ))}
-              <input
-                type="text"
-                placeholder={filters.companies.length > 0 ? 'Add company...' : 'Filter by company name...'}
-                value={companySearch}
-                onChange={e => setCompanySearch(e.target.value)}
-                onKeyDown={e => {
-                  if (e.key === 'Enter' && companySearch.trim()) {
-                    setFilters(f => ({ ...f, companies: [...f.companies, companySearch.trim()] }));
-                    setCompanySearch('');
-                  }
-                }}
-                className="flex-1 min-w-[120px] text-sm text-fg-default placeholder:text-fg-soft bg-transparent outline-none"
-              />
-            </div>
-          </div>
-        </div>
+        {/* Company autocomplete search */}
+        <CompanyAutocomplete
+          selected={filters.companies}
+          onAdd={name => setFilters(f => ({ ...f, companies: [...f.companies, name] }))}
+          onRemove={name => setFilters(f => ({ ...f, companies: f.companies.filter(x => x !== name) }))}
+        />
 
         {/* Active filter chips */}
         {hasActiveFilters && (
@@ -417,6 +394,85 @@ export default function Export() {
           </>
         )}
       </div>
+    </div>
+  );
+}
+
+/** Autocomplete company search with factory count badges */
+function CompanyAutocomplete({ selected, onAdd, onRemove }: {
+  selected: string[];
+  onAdd: (name: string) => void;
+  onRemove: (name: string) => void;
+}) {
+  const [query, setQuery] = useState('');
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  const { data } = useQuery({
+    queryKey: ['company-search', query],
+    queryFn: () => companiesApi.list({ search: query, limit: 10 }),
+    enabled: query.length >= 2,
+    staleTime: 10_000,
+  });
+
+  const results = (data?.data ?? []).filter(c => !selected.includes(c.name));
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, []);
+
+  return (
+    <div ref={ref} className="relative">
+      <div className="flex items-center gap-2 bg-white/[0.02] border border-white/10 rounded-xl px-3 py-2">
+        <Search className="w-3.5 h-3.5 text-indigo-400 flex-shrink-0" />
+        <div className="flex items-center gap-1.5 flex-wrap flex-1">
+          {selected.map(name => (
+            <span key={name} className="px-2 py-0.5 bg-white/5 text-fg-muted text-xs rounded flex items-center gap-1 border border-white/10">
+              {name}
+              <button onClick={() => onRemove(name)} className="hover:text-fg-default">&times;</button>
+            </span>
+          ))}
+          <input
+            type="text"
+            placeholder={selected.length > 0 ? 'Add company...' : 'Search companies...'}
+            value={query}
+            onChange={e => { setQuery(e.target.value); setOpen(true); }}
+            onFocus={() => query.length >= 2 && setOpen(true)}
+            className="flex-1 min-w-[140px] text-sm text-fg-default placeholder:text-fg-soft bg-transparent outline-none"
+          />
+        </div>
+      </div>
+
+      {/* Dropdown results */}
+      {open && results.length > 0 && (
+        <div className="absolute top-full left-0 right-0 mt-1 bg-bg-elevated border border-border-subtle rounded-xl shadow-xl z-20 max-h-64 overflow-y-auto py-1">
+          {results.map(company => (
+            <button
+              key={company.id}
+              onClick={() => {
+                onAdd(company.name);
+                setQuery('');
+                setOpen(false);
+              }}
+              className="w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-white/[0.05] transition-colors"
+            >
+              <div className="flex-1 min-w-0">
+                <div className="text-sm text-fg-default truncate">{company.name}</div>
+                <div className="text-[10px] text-fg-soft">{company.sector || 'Manufacturing'}</div>
+              </div>
+              <div className="flex items-center gap-1 text-xs text-fg-soft flex-shrink-0">
+                <Factory className="w-3 h-3" />
+                {company.facilityCount}
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
