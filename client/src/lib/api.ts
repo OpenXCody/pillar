@@ -81,7 +81,7 @@ export const reviewApi = {
 export const exportApi = {
   generate: (filters: Record<string, unknown>) =>
     apiFetch<import('@shared/types').ExportRecord & { facilityCount: number; companyCount: number }>('/export/generate', { method: 'POST', body: JSON.stringify({ filters }) }),
-  preview: (params: { states?: string; naicsPrefix?: string; minSources?: number; minConfidence?: number; hasCompany?: boolean; hasCoordinates?: boolean }) =>
+  preview: (params: { states?: string; naicsPrefix?: string; minConfidence?: number; hasCompany?: boolean; hasCoordinates?: boolean; minFacilities?: number; companies?: string }) =>
     apiFetch<{ facilityCount: number; companyCount: number; stateCount: number }>(`/export/preview${buildQuery(params as Record<string, string | number | boolean | undefined>)}`),
   history: () => apiFetch<{ exports: import('@shared/types').ExportRecord[] }>('/export/history'),
   downloadUrl: (filename: string) => `${API_BASE}/export/download/${filename}`,

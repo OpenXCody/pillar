@@ -188,7 +188,7 @@ exportRouter.post('/generate', async (req, res) => {
  */
 exportRouter.get('/preview', async (req, res) => {
   try {
-    const { states, naicsPrefix, minConfidence, hasCompany, hasCoordinates } = req.query;
+    const { states, naicsPrefix, minConfidence, hasCompany, hasCoordinates, minFacilities, companies: companiesParam } = req.query;
 
     // Valid US states (50 + DC) — excludes territories
     const VALID_STATES = ['AL','AK','AZ','AR','CA','CO','CT','DE','DC','FL','GA','HI','ID','IL','IN','IA','KS','KY','LA','ME','MD','MA','MI','MN','MS','MO','MT','NE','NV','NH','NJ','NM','NY','NC','ND','OH','OK','OR','PA','RI','SC','SD','TN','TX','UT','VT','VA','WA','WV','WI','WY'];
@@ -215,6 +215,14 @@ exportRouter.get('/preview', async (req, res) => {
       conditions.push(isNotNull(facilities.latitude));
       conditions.push(isNotNull(facilities.longitude));
     }
+    // Company name filter (comma-separated list, ILIKE match)
+    if (companiesParam && typeof companiesParam === 'string') {
+      const companyNames = companiesParam.split(',').filter(Boolean);
+      if (companyNames.length > 0) {
+        const companyConditions = companyNames.map(name => sql`${facilities.companyName} ILIKE ${`%${name}%`}`);
+        conditions.push(sql`(${sql.join(companyConditions, sql` OR `)})`);
+      }
+    }
 
     const [result] = await db
       .select({
@@ -225,9 +233,24 @@ exportRouter.get('/preview', async (req, res) => {
       .from(facilities)
       .where(and(...conditions));
 
+    // For company export with minFacilities, filter the company count
+    let companyCount = result.companyCount;
+    if (minFacilities && Number(minFacilities) > 1) {
+      const [filtered] = await db.execute(sql`
+        SELECT count(*)::int as cnt FROM (
+          SELECT company_id FROM facilities
+          WHERE ${sql.join(conditions.map(c => c), sql` AND `)}
+            AND company_id IS NOT NULL
+          GROUP BY company_id
+          HAVING count(*) >= ${Number(minFacilities)}
+        ) sub
+      `);
+      companyCount = Number(filtered.cnt);
+    }
+
     res.json({
       facilityCount: result.facilityCount,
-      companyCount: result.companyCount,
+      companyCount,
       stateCount: result.stateCount,
     });
   } catch (err) {

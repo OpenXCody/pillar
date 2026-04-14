@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { exportApi, statsApi } from '../lib/api';
-import { Download, FileDown, Check, Clock, AlertCircle, Factory, Building2, MapPin, BarChart3 } from 'lucide-react';
+import { Download, FileDown, Check, Clock, AlertCircle, Factory, Building2, MapPin, BarChart3, Search } from 'lucide-react';
 import { US_STATES } from '@shared/states';
 import { INDUSTRY_CATEGORIES } from '@shared/naics';
 import SearchableSelect from '@/components/ui/SearchableSelect';
@@ -12,8 +12,8 @@ interface ExportFilters {
   states: string[];
   naicsPrefix: string;
   minConfidence: number;
-  // Company export specific
   minFacilities: number;
+  companies: string[];
 }
 
 function formatBytes(bytes: number): string {
@@ -38,7 +38,9 @@ export default function Export() {
     naicsPrefix: '',
     minConfidence: 0,
     minFacilities: 1,
+    companies: [],
   });
+  const [companySearch, setCompanySearch] = useState('');
 
   // Factory exports always require company + coordinates
   const previewParams = {
@@ -47,6 +49,8 @@ export default function Export() {
     minConfidence: filters.minConfidence > 0 ? filters.minConfidence : undefined,
     hasCompany: true,
     hasCoordinates: true,
+    minFacilities: exportType === 'company' && filters.minFacilities > 1 ? filters.minFacilities : undefined,
+    companies: filters.companies.length > 0 ? filters.companies.join(',') : undefined,
   };
 
   const { data: preview, isLoading: previewLoading } = useQuery({
@@ -74,17 +78,19 @@ export default function Export() {
       minConfidence: filters.minConfidence > 0 ? filters.minConfidence : undefined,
       hasCompany: true,
       hasCoordinates: true,
-      ...(exportType === 'company' && filters.minFacilities > 1 ? { minFacilities: filters.minFacilities } : {}),
+      minFacilities: exportType === 'company' && filters.minFacilities > 1 ? filters.minFacilities : undefined,
+      companies: filters.companies.length > 0 ? filters.companies : undefined,
     }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['export', 'history'] });
     },
   });
 
-  const hasActiveFilters = filters.states.length > 0 || filters.naicsPrefix || filters.minConfidence > 0 || filters.minFacilities > 1;
+  const hasActiveFilters = filters.states.length > 0 || filters.naicsPrefix || filters.minConfidence > 0 || filters.minFacilities > 1 || filters.companies.length > 0;
 
   const clearFilters = () => {
-    setFilters({ states: [], naicsPrefix: '', minConfidence: 0, minFacilities: 1 });
+    setFilters({ states: [], naicsPrefix: '', minConfidence: 0, minFacilities: 1, companies: [] });
+    setCompanySearch('');
   };
 
   const previewCount = exportType === 'factory'
@@ -140,7 +146,7 @@ export default function Export() {
             options={US_STATES.map(s => ({ value: s.code, label: s.name }))}
             value={filters.states[0] || ''}
             onChange={v => setFilters(f => ({ ...f, states: v ? [v] : [] }))}
-            placeholder="Filter by state..."
+            placeholder="State"
             icon={<MapPin className="w-3.5 h-3.5 text-indigo-400 flex-shrink-0" />}
             accentColor="indigo"
           />
@@ -149,38 +155,68 @@ export default function Export() {
             options={INDUSTRY_CATEGORIES.map(c => ({ value: c.naicsPrefixes[0], label: c.label }))}
             value={filters.naicsPrefix}
             onChange={v => setFilters(f => ({ ...f, naicsPrefix: v }))}
-            placeholder="Filter by category..."
+            placeholder="Category"
             icon={<Factory className="w-3.5 h-3.5 text-indigo-400 flex-shrink-0" />}
             accentColor="indigo"
           />
 
-          <select
-            value={filters.minConfidence}
-            onChange={(e) => setFilters(f => ({ ...f, minConfidence: Number(e.target.value) }))}
-            className="bg-white/[0.03] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-fg-default min-w-[150px]"
-            style={{ colorScheme: 'dark' }}
-          >
-            <option value="0">Any confidence</option>
-            <option value="50">50+ (Complete)</option>
-            <option value="70">70+ (High)</option>
-            <option value="90">90+ (Very High)</option>
-            <option value="100">100 (Perfect)</option>
-          </select>
+          <SearchableSelect
+            options={[
+              { value: '50', label: '50+ (Complete)' },
+              { value: '70', label: '70+ (High)' },
+              { value: '90', label: '90+ (Very High)' },
+              { value: '100', label: '100 (Perfect)' },
+            ]}
+            value={filters.minConfidence > 0 ? String(filters.minConfidence) : ''}
+            onChange={v => setFilters(f => ({ ...f, minConfidence: v ? Number(v) : 0 }))}
+            placeholder="Confidence"
+            icon={<BarChart3 className="w-3.5 h-3.5 text-indigo-400 flex-shrink-0" />}
+            accentColor="indigo"
+          />
 
           {exportType === 'company' && (
-            <select
-              value={filters.minFacilities}
-              onChange={(e) => setFilters(f => ({ ...f, minFacilities: Number(e.target.value) }))}
-              className="bg-white/[0.03] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-fg-default min-w-[150px]"
-            style={{ colorScheme: 'dark' }}
-            >
-              <option value="1">Any size</option>
-              <option value="5">5+ factories</option>
-              <option value="10">10+ factories</option>
-              <option value="15">15+ factories</option>
-              <option value="25">25+ factories</option>
-            </select>
+            <SearchableSelect
+              options={[
+                { value: '5', label: '5+ factories' },
+                { value: '10', label: '10+ factories' },
+                { value: '15', label: '15+ factories' },
+                { value: '25', label: '25+ factories' },
+              ]}
+              value={filters.minFacilities > 1 ? String(filters.minFacilities) : ''}
+              onChange={v => setFilters(f => ({ ...f, minFacilities: v ? Number(v) : 1 }))}
+              placeholder="Size"
+              icon={<Building2 className="w-3.5 h-3.5 text-indigo-400 flex-shrink-0" />}
+              accentColor="indigo"
+            />
           )}
+        </div>
+
+        {/* Company tag input */}
+        <div>
+          <div className="flex items-center gap-2 bg-white/[0.02] border border-white/10 rounded-xl px-3 py-2 max-w-lg">
+            <Search className="w-3.5 h-3.5 text-indigo-400 flex-shrink-0" />
+            <div className="flex items-center gap-1.5 flex-wrap flex-1">
+              {filters.companies.map(c => (
+                <span key={c} className="px-2 py-0.5 bg-white/5 text-fg-muted text-xs rounded flex items-center gap-1 border border-white/10">
+                  {c}
+                  <button onClick={() => setFilters(f => ({ ...f, companies: f.companies.filter(x => x !== c) }))} className="hover:text-fg-default">&times;</button>
+                </span>
+              ))}
+              <input
+                type="text"
+                placeholder={filters.companies.length > 0 ? 'Add company...' : 'Filter by company name...'}
+                value={companySearch}
+                onChange={e => setCompanySearch(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter' && companySearch.trim()) {
+                    setFilters(f => ({ ...f, companies: [...f.companies, companySearch.trim()] }));
+                    setCompanySearch('');
+                  }
+                }}
+                className="flex-1 min-w-[120px] text-sm text-fg-default placeholder:text-fg-soft bg-transparent outline-none"
+              />
+            </div>
+          </div>
         </div>
 
         {/* Active filter chips */}
@@ -210,6 +246,12 @@ export default function Export() {
                 <button onClick={() => setFilters(f => ({ ...f, minFacilities: 1 }))} className="hover:text-fg-default">&times;</button>
               </span>
             )}
+            {filters.companies.map(c => (
+              <span key={c} className="px-2 py-0.5 bg-white/5 text-fg-muted text-xs rounded flex items-center gap-1 border border-white/10">
+                {c}
+                <button onClick={() => setFilters(f => ({ ...f, companies: f.companies.filter(x => x !== c) }))} className="hover:text-fg-default">&times;</button>
+              </span>
+            ))}
           </div>
         )}
 
