@@ -69,6 +69,11 @@ export const reviewApi = {
     apiFetch<import('@shared/types').PaginatedResponse<import('@shared/types').MatchCandidate>>(`/review${buildQuery(params)}`),
   confirm: (id: string) => apiFetch<void>(`/review/${id}/confirm`, { method: 'POST' }),
   reject: (id: string) => apiFetch<void>(`/review/${id}/reject`, { method: 'POST' }),
+  batch: (ids: string[], action: 'confirm' | 'reject') =>
+    apiFetch<{ success: boolean; count: number }>('/review/batch', {
+      method: 'POST',
+      body: JSON.stringify({ ids, action }),
+    }),
   stats: () => apiFetch<{ pending: number; confirmed: number; rejected: number }>('/review/stats'),
 };
 

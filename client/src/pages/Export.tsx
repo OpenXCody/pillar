@@ -33,10 +33,11 @@ const NAICS_SECTORS = [
   { code: '339', label: 'Miscellaneous' },
 ];
 
+type ExportType = 'factory' | 'company';
+
 interface ExportFilters {
   states: string[];
   naicsPrefix: string;
-  minSources: number;
   minConfidence: number;
   hasCompany: boolean;
   hasCoordinates: boolean;
@@ -58,13 +59,13 @@ function formatDate(date: string): string {
 export default function Export() {
   const queryClient = useQueryClient();
 
+  const [exportType, setExportType] = useState<ExportType>('factory');
   const [filters, setFilters] = useState<ExportFilters>({
     states: [],
     naicsPrefix: '',
-    minSources: 1,
     minConfidence: 0,
-    hasCompany: false,
-    hasCoordinates: false,
+    hasCompany: true,
+    hasCoordinates: true,
   });
 
   const [showStates, setShowStates] = useState(false);
@@ -73,7 +74,6 @@ export default function Export() {
   const previewParams = {
     states: filters.states.join(',') || undefined,
     naicsPrefix: filters.naicsPrefix || undefined,
-    minSources: filters.minSources > 1 ? filters.minSources : undefined,
     minConfidence: filters.minConfidence > 0 ? filters.minConfidence : undefined,
     hasCompany: filters.hasCompany || undefined,
     hasCoordinates: filters.hasCoordinates || undefined,
@@ -98,9 +98,9 @@ export default function Export() {
 
   const generateMutation = useMutation({
     mutationFn: () => exportApi.generate({
+      exportType,
       states: filters.states.length > 0 ? filters.states : undefined,
       naicsPrefix: filters.naicsPrefix || undefined,
-      minSources: filters.minSources > 1 ? filters.minSources : undefined,
       minConfidence: filters.minConfidence > 0 ? filters.minConfidence : undefined,
       hasCompany: filters.hasCompany || undefined,
       hasCoordinates: filters.hasCoordinates || undefined,
@@ -110,7 +110,7 @@ export default function Export() {
     },
   });
 
-  const hasActiveFilters = filters.states.length > 0 || filters.naicsPrefix || filters.minSources > 1 || filters.minConfidence > 0 || filters.hasCompany || filters.hasCoordinates;
+  const hasActiveFilters = filters.states.length > 0 || filters.naicsPrefix || filters.minConfidence > 0 || filters.hasCompany || filters.hasCoordinates;
 
   const toggleState = useCallback((state: string) => {
     setFilters(f => ({
@@ -123,10 +123,9 @@ export default function Export() {
     setFilters({
       states: [],
       naicsPrefix: '',
-      minSources: 1,
       minConfidence: 0,
-      hasCompany: false,
-      hasCoordinates: false,
+      hasCompany: true,
+      hasCoordinates: true,
     });
   };
 
@@ -135,6 +134,28 @@ export default function Export() {
       <div>
         <h2 className="text-xl font-semibold text-fg-default">Export</h2>
         <p className="text-sm text-fg-muted mt-1">Generate CSV files for Archangel import</p>
+      </div>
+
+      {/* Export Type Tabs */}
+      <div className="flex items-center gap-1 bg-white/[0.02] border border-white/5 rounded-xl p-1 w-fit">
+        <button
+          onClick={() => setExportType('factory')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+            exportType === 'factory' ? 'bg-white/10 text-fg-default' : 'text-fg-soft hover:text-fg-muted hover:bg-white/[0.03]'
+          }`}
+        >
+          <Package className="w-4 h-4" />
+          Factory Export
+        </button>
+        <button
+          onClick={() => setExportType('company')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+            exportType === 'company' ? 'bg-white/10 text-fg-default' : 'text-fg-soft hover:text-fg-muted hover:bg-white/[0.03]'
+          }`}
+        >
+          <Building2 className="w-4 h-4" />
+          Company Export
+        </button>
       </div>
 
       {/* Filters */}
@@ -209,34 +230,20 @@ export default function Export() {
           </select>
         </div>
 
-        {/* Quality filters */}
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="text-xs text-fg-muted uppercase tracking-wider block mb-2">Min Sources</label>
-            <select
-              value={filters.minSources}
-              onChange={(e) => setFilters(f => ({ ...f, minSources: Number(e.target.value) }))}
-              className="w-full bg-bg-inset border border-border-subtle rounded-lg px-3 py-1.5 text-sm text-fg-default"
-            >
-              <option value="1">Any (1+)</option>
-              <option value="2">2+ sources</option>
-              <option value="3">3+ sources</option>
-            </select>
-          </div>
-          <div>
-            <label className="text-xs text-fg-muted uppercase tracking-wider block mb-2">Min Confidence</label>
-            <select
-              value={filters.minConfidence}
-              onChange={(e) => setFilters(f => ({ ...f, minConfidence: Number(e.target.value) }))}
-              className="w-full bg-bg-inset border border-border-subtle rounded-lg px-3 py-1.5 text-sm text-fg-default"
-            >
-              <option value="0">Any</option>
-              <option value="30">30+</option>
-              <option value="50">50+</option>
-              <option value="70">70+ (High)</option>
-              <option value="90">90+ (Very High)</option>
-            </select>
-          </div>
+        {/* Confidence filter */}
+        <div>
+          <label className="text-xs text-fg-muted uppercase tracking-wider block mb-2">Min Confidence</label>
+          <select
+            value={filters.minConfidence}
+            onChange={(e) => setFilters(f => ({ ...f, minConfidence: Number(e.target.value) }))}
+            className="w-full bg-bg-inset border border-border-subtle rounded-lg px-3 py-1.5 text-sm text-fg-default"
+          >
+            <option value="0">Any</option>
+            <option value="30">30+</option>
+            <option value="50">50+</option>
+            <option value="70">70+ (High)</option>
+            <option value="90">90+ (Very High)</option>
+          </select>
         </div>
 
         {/* Boolean filters */}
@@ -321,7 +328,7 @@ export default function Export() {
           ) : (
             <>
               <Download className="w-4 h-4" />
-              Generate CSV Export
+              Generate {exportType === 'factory' ? 'Factory' : 'Company'} CSV
               {preview && preview.facilityCount > 0 && (
                 <span className="text-indigo-200 text-xs">({preview.facilityCount.toLocaleString()} records)</span>
               )}
@@ -418,16 +425,30 @@ export default function Export() {
       <div className="bg-bg-surface border border-border-subtle rounded-xl p-5">
         <h3 className="text-sm font-medium text-fg-default mb-3 flex items-center gap-2">
           <BarChart3 className="w-4 h-4 text-fg-soft" />
-          CSV Format
+          {exportType === 'factory' ? 'Factory CSV Format' : 'Company CSV Format'}
         </h3>
-        <div className="text-xs text-fg-muted space-y-1 font-mono">
-          <p>company_name, facility_name, address, city, state, zip,</p>
-          <p>latitude, longitude, naics_code, naics_description,</p>
-          <p>employee_count, source_count, confidence, epa_registry_id</p>
-        </div>
-        <p className="text-xs text-fg-soft mt-3">
-          Compatible with Archangel's bulk import format. Facilities are sorted by state, city, then name.
-        </p>
+        {exportType === 'factory' ? (
+          <>
+            <div className="text-xs text-fg-muted space-y-1 font-mono">
+              <p>company_name, facility_name, address, city, state, zip,</p>
+              <p>latitude, longitude, naics_code, naics_description,</p>
+              <p>employee_count, source_count, confidence, epa_registry_id</p>
+            </div>
+            <p className="text-xs text-fg-soft mt-3">
+              Compatible with Archangel's bulk import format. Only facilities with all required fields (company, address, coordinates) are included. Sorted by state, city, then name.
+            </p>
+          </>
+        ) : (
+          <>
+            <div className="text-xs text-fg-muted space-y-1 font-mono">
+              <p>company_name, sector, facility_count, states,</p>
+              <p>naics_codes, status</p>
+            </div>
+            <p className="text-xs text-fg-soft mt-3">
+              One row per company with aggregated facility data. Sorted by facility count descending.
+            </p>
+          </>
+        )}
       </div>
     </div>
   );

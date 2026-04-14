@@ -41,6 +41,7 @@ export default function Review() {
   const [cursor, setCursor] = useState<string | undefined>();
   const [allItems, setAllItems] = useState<ReviewCandidate[]>([]);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   const { data: stats } = useQuery({
     queryKey: ['review', 'stats'],
@@ -71,10 +72,28 @@ export default function Review() {
     },
   });
 
+  const batchMutation = useMutation({
+    mutationFn: ({ ids, action }: { ids: string[]; action: 'confirm' | 'reject' }) =>
+      reviewApi.batch(ids, action),
+    onSuccess: () => {
+      setSelectedIds(new Set());
+      queryClient.invalidateQueries({ queryKey: ['review'] });
+    },
+  });
+
   function handleTabChange(tab: TabStatus) {
     setActiveTab(tab);
     setCursor(undefined);
     setAllItems([]);
+    setSelectedIds(new Set());
+  }
+
+  function toggleSelect(id: string) {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
   }
 
   function handleLoadMore() {
@@ -119,6 +138,35 @@ export default function Review() {
         ))}
       </div>
 
+      {/* Batch action bar */}
+      {selectedIds.size > 0 && (
+        <div className="sticky top-0 z-10 bg-bg-surface/95 backdrop-blur-xl border border-white/10 rounded-xl px-4 py-3 flex items-center gap-4">
+          <span className="text-sm font-medium text-fg-default">{selectedIds.size} selected</span>
+          <button
+            onClick={() => {
+              const pendingIds = displayItems.filter(c => c.status === 'pending').map(c => c.id);
+              setSelectedIds(new Set(pendingIds));
+            }}
+            className="text-xs text-fg-muted hover:text-fg-default transition-colors"
+          >Select all visible</button>
+          <div className="flex-1" />
+          <button
+            onClick={() => batchMutation.mutate({ ids: [...selectedIds], action: 'confirm' })}
+            disabled={batchMutation.isPending}
+            className="px-3 py-1.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-lg text-xs font-medium hover:bg-emerald-500/20 transition-colors disabled:opacity-50"
+          >Confirm All</button>
+          <button
+            onClick={() => batchMutation.mutate({ ids: [...selectedIds], action: 'reject' })}
+            disabled={batchMutation.isPending}
+            className="px-3 py-1.5 bg-red-500/10 text-red-400 border border-red-500/20 rounded-lg text-xs font-medium hover:bg-red-500/20 transition-colors disabled:opacity-50"
+          >Reject All</button>
+          <button
+            onClick={() => setSelectedIds(new Set())}
+            className="text-xs text-fg-soft hover:text-fg-muted transition-colors"
+          >Clear</button>
+        </div>
+      )}
+
       {/* Candidates */}
       <div className="space-y-3">
         {isLoading && displayItems.length === 0 ? (
@@ -147,7 +195,16 @@ export default function Review() {
                   onClick={() => setExpandedId(isExpanded ? null : candidate.id)}
                   className="flex items-center gap-4 p-4 cursor-pointer hover:bg-white/[0.03] transition-colors"
                 >
-                  <GitCompare className="w-4 h-4 text-violet-400 flex-shrink-0" />
+                  {activeTab === 'pending' && (
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.has(candidate.id)}
+                      onChange={(e) => { e.stopPropagation(); toggleSelect(candidate.id); }}
+                      onClick={(e) => e.stopPropagation()}
+                      className="w-4 h-4 rounded border-white/20 bg-white/5 text-indigo-500 flex-shrink-0 cursor-pointer accent-indigo-500"
+                    />
+                  )}
+                  <GitCompare className="w-4 h-4 text-fg-soft flex-shrink-0" />
 
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">

@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { db } from '../db/index.js';
 import { matchCandidates, rawRecords } from '../db/schema.js';
-import { eq, count, and, gt, desc, sql } from 'drizzle-orm';
+import { eq, count, and, gt, desc, sql, inArray } from 'drizzle-orm';
 
 export const reviewRouter = Router();
 
@@ -110,5 +110,38 @@ reviewRouter.post('/:id/reject', async (req, res) => {
   } catch (err) {
     console.error('Error rejecting match:', err);
     res.status(500).json({ error: 'Failed to reject match' });
+  }
+});
+
+reviewRouter.post('/batch', async (req, res) => {
+  try {
+    const { ids, action } = req.body as { ids: string[]; action: 'confirm' | 'reject' };
+
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({ error: 'ids array is required' });
+    }
+    if (!['confirm', 'reject'].includes(action)) {
+      return res.status(400).json({ error: 'action must be confirm or reject' });
+    }
+
+    const newStatus = action === 'confirm' ? 'confirmed' : 'rejected';
+
+    await db.update(matchCandidates)
+      .set({
+        status: newStatus as 'confirmed' | 'rejected',
+        reviewedAt: new Date(),
+        reviewedBy: 'admin',
+      })
+      .where(
+        and(
+          inArray(matchCandidates.id, ids),
+          eq(matchCandidates.status, 'pending'),
+        )
+      );
+
+    res.json({ success: true, count: ids.length });
+  } catch (err) {
+    console.error('Error batch updating matches:', err);
+    res.status(500).json({ error: 'Failed to batch update matches' });
   }
 });

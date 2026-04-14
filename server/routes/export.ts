@@ -19,7 +19,12 @@ if (!existsSync(EXPORT_DIR)) {
  */
 exportRouter.post('/generate', async (req, res) => {
   try {
-    const { filters = {}, format = 'csv' } = req.body;
+    const { filters = {}, format = 'csv', exportType = 'factory' } = req.body;
+
+    // Company export: separate path
+    if (exportType === 'company') {
+      return await generateCompanyExport(req, res, filters, format);
+    }
 
     // Create export record
     const [exportRecord] = await db.insert(exportsTable).values({
@@ -266,6 +271,74 @@ exportRouter.get('/download/:filename', (req, res) => {
   res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
   createReadStream(filePath).pipe(res);
 });
+
+async function generateCompanyExport(_req: import('express').Request, res: import('express').Response, filters: Record<string, unknown>, format: string) {
+  const [exportRecord] = await db.insert(exportsTable).values({
+    status: 'generating',
+    format,
+    filters: JSON.stringify({ ...filters, exportType: 'company' }),
+  }).returning();
+
+  const filename = `pillar-companies-${exportRecord.id.slice(0, 8)}.csv`;
+  const filePath = join(EXPORT_DIR, filename);
+  const writeStream = createWriteStream(filePath);
+
+  const headers = ['company_name', 'sector', 'facility_count', 'states', 'naics_codes', 'status'];
+  writeStream.write(headers.join(',') + '\n');
+
+  // Query companies with aggregated state and NAICS data
+  const rows = await db.execute(sql`
+    SELECT
+      c.name,
+      c.sector,
+      c.facility_count,
+      c.status,
+      c.naics_codes,
+      (SELECT string_agg(DISTINCT f.state, '; ' ORDER BY f.state)
+       FROM facilities f WHERE f.company_id = c.id) as states
+    FROM companies c
+    WHERE c.facility_count > 0 AND c.status != 'rejected'
+    ORDER BY c.facility_count DESC
+  `) as { name: string; sector: string | null; facility_count: number; status: string; naics_codes: string | null; states: string | null }[];
+
+  let companyCount = 0;
+  for (const row of rows) {
+    const line = [
+      csvEscape(row.name),
+      csvEscape(row.sector || ''),
+      row.facility_count?.toString() || '0',
+      csvEscape(row.states || ''),
+      csvEscape(row.naics_codes || ''),
+      row.status,
+    ].join(',');
+    writeStream.write(line + '\n');
+    companyCount++;
+  }
+
+  writeStream.end();
+  await new Promise<void>((resolve) => writeStream.on('finish', resolve));
+  const fileSize = statSync(filePath).size;
+
+  await db.update(exportsTable).set({
+    status: 'completed',
+    facilityCount: 0,
+    companyCount,
+    filePath: filename,
+    fileSize,
+    completedAt: new Date(),
+  }).where(eq(exportsTable.id, exportRecord.id));
+
+  res.json({
+    id: exportRecord.id,
+    status: 'completed',
+    format,
+    facilityCount: 0,
+    companyCount,
+    filePath: filename,
+    fileSize,
+    filters: { ...filters, exportType: 'company' },
+  });
+}
 
 function csvEscape(value: string): string {
   if (!value) return '';
