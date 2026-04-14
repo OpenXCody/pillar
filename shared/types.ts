@@ -1,4 +1,4 @@
-export type DataSource = 'epa_echo' | 'epa_tri' | 'osha' | 'usda_fsis' | 'faa' | 'nhtsa' | 'manual';
+export type DataSource = 'epa_echo' | 'epa_tri' | 'osha' | 'usda_fsis' | 'faa' | 'nhtsa' | 'sam_gov' | 'sec_edgar' | 'manual';
 export type RunStatus = 'pending' | 'fetching' | 'normalizing' | 'matching' | 'merging' | 'completed' | 'failed';
 export type MatchStatus = 'pending' | 'confirmed' | 'rejected' | 'auto_matched';
 export type MatchType = 'geo_name' | 'address_exact' | 'frs_id' | 'cross_source';
@@ -47,6 +47,18 @@ export const DATA_SOURCES: Record<DataSource, SourceInfo> = {
     name: 'NHTSA',
     description: 'Registered vehicle and equipment manufacturers from the vPIC database',
     color: '#FB923C',
+  },
+  sam_gov: {
+    key: 'sam_gov',
+    name: 'SAM.gov',
+    description: 'Federal contractor registry — manufacturers registered in the System for Award Management',
+    color: '#818CF8',
+  },
+  sec_edgar: {
+    key: 'sec_edgar',
+    name: 'SEC EDGAR',
+    description: 'Publicly traded manufacturers from Securities and Exchange Commission filings',
+    color: '#34D399',
   },
   manual: {
     key: 'manual',
@@ -198,6 +210,26 @@ export interface StateDetail {
   topCompanies: { id: string; name: string; count: number }[];
   bySource: Record<string, number>;
   topCities: { city: string; count: number }[];
+}
+
+export interface CityDetail {
+  city: string;
+  stateCode: string;
+  stateName: string;
+  totalFacilities: number;
+  totalCompanies: number;
+  topNaics: { code: string | null; description: string | null; count: number }[];
+  topCompanies: { id: string; name: string; count: number }[];
+  bySource: Record<string, number>;
+  sampleFacilities: {
+    id: string;
+    name: string;
+    companyId: string | null;
+    companyName: string | null;
+    primaryNaics: string | null;
+    primaryNaicsDescription: string | null;
+    confidence: number;
+  }[];
 }
 
 export interface StatsOverview {

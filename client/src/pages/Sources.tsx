@@ -39,11 +39,11 @@ export default function Sources() {
   });
 
   const envSources = Object.values(DATA_SOURCES).filter(s => s.key === 'epa_echo' || s.key === 'epa_tri');
-  const industrySources = Object.values(DATA_SOURCES).filter(s => s.key === 'faa' || s.key === 'nhtsa');
+  const industrySources = Object.values(DATA_SOURCES).filter(s => s.key === 'faa' || s.key === 'nhtsa' || s.key === 'sam_gov' || s.key === 'sec_edgar');
   const v2Sources = Object.values(DATA_SOURCES).filter(s => s.key === 'osha' || s.key === 'usda_fsis');
   const manualSource = DATA_SOURCES.manual;
   const isPipelineRunning = pipelineStatus?.running ?? false;
-  const activeSources = ['epa_echo', 'epa_tri', 'faa', 'nhtsa'];
+  const activeSources = ['epa_echo', 'epa_tri', 'faa', 'nhtsa', 'sam_gov', 'sec_edgar'];
 
   return (
     <div className="space-y-6">

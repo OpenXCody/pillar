@@ -4,7 +4,7 @@ import { relations } from 'drizzle-orm';
 // ─── Enums ───────────────────────────────────────────────────────────
 
 export const dataSourceEnum = pgEnum('data_source', [
-  'epa_echo', 'epa_tri', 'osha', 'usda_fsis', 'faa', 'nhtsa', 'manual',
+  'epa_echo', 'epa_tri', 'osha', 'usda_fsis', 'faa', 'nhtsa', 'sam_gov', 'sec_edgar', 'manual',
 ]);
 
 export const runStatusEnum = pgEnum('run_status', [
@@ -99,6 +99,16 @@ export const rawRecords = pgTable('raw_records', {
   // NHTSA fields
   nhtsaMfrId: text('nhtsa_mfr_id'),
   nhtsaVehicleTypes: text('nhtsa_vehicle_types'),
+
+  // SAM.gov fields
+  samCageCode: text('sam_cage_code'),
+  samUeiNumber: text('sam_uei_number'),
+  samBusinessTypes: text('sam_business_types'),
+
+  // SEC EDGAR fields
+  secCik: text('sec_cik'),
+  secTicker: text('sec_ticker'),
+  secSicCode: text('sec_sic_code'),
 
   // Linkage to golden record
   facilityId: uuid('facility_id').references(() => facilities.id, { onDelete: 'set null' }),

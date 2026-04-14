@@ -24,6 +24,11 @@ function buildQuery(params: Record<string, string | number | boolean | undefined
 
 export const statsApi = {
   overview: () => apiFetch<import('@shared/types').StatsOverview>('/stats/overview'),
+  industries: () => apiFetch<{
+    industries: Array<{ code: string; description: string; facilityCount: number; companyCount: number; subsector: string }>;
+    sectors: Array<{ sector: string; facilityCount: number; companyCount: number }>;
+    subsectors: Array<{ subsector: string; facilityCount: number; companyCount: number; topStates: Array<{ state: string; count: number }> }>;
+  }>('/stats/industries'),
 };
 
 export const companiesApi = {

@@ -12,6 +12,8 @@ import { fetchEcho } from './fetch/echoConnector.js';
 import { fetchTri } from './fetch/triConnector.js';
 import { fetchFaa } from './fetch/faaConnector.js';
 import { fetchNhtsa } from './fetch/nhtsaConnector.js';
+import { fetchSamGov } from './fetch/samConnector.js';
+import { fetchSec } from './fetch/secConnector.js';
 import { runMatching } from './match/matcher.js';
 import { runMerge } from './merge/merger.js';
 import type { DataSource } from '@shared/types.js';
@@ -107,6 +109,14 @@ export async function runPipeline(source: DataSource): Promise<PipelineResult> {
       const nhtsaResult = await fetchNhtsa(run.id);
       totalFetched = nhtsaResult.totalFetched;
       inserted = nhtsaResult.inserted;
+    } else if (source === 'sam_gov') {
+      const samResult = await fetchSamGov(run.id);
+      totalFetched = samResult.totalFetched;
+      inserted = samResult.inserted;
+    } else if (source === 'sec_edgar') {
+      const secResult = await fetchSec(run.id);
+      totalFetched = secResult.totalFetched;
+      inserted = secResult.inserted;
     } else {
       throw new Error(`Source connector not implemented: ${source}`);
     }

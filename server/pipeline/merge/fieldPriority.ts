@@ -17,16 +17,16 @@ type FieldName = 'name' | 'address' | 'city' | 'state' | 'zip' | 'county' |
  * OSHA wins for employeeCount because it's the only source with this data.
  */
 const FIELD_PRIORITY: Record<FieldName, DataSource[]> = {
-  name:          ['epa_echo', 'epa_tri', 'faa', 'nhtsa', 'osha', 'usda_fsis', 'manual'],
-  address:       ['epa_echo', 'epa_tri', 'faa', 'nhtsa', 'osha', 'usda_fsis'],
-  city:          ['epa_echo', 'epa_tri', 'faa', 'nhtsa', 'osha', 'usda_fsis'],
-  state:         ['epa_echo', 'epa_tri', 'faa', 'nhtsa', 'osha', 'usda_fsis'],
-  zip:           ['epa_echo', 'epa_tri', 'faa', 'nhtsa', 'osha', 'usda_fsis'],
+  name:          ['epa_echo', 'epa_tri', 'sec_edgar', 'faa', 'nhtsa', 'sam_gov', 'osha', 'usda_fsis', 'manual'],
+  address:       ['epa_echo', 'epa_tri', 'faa', 'nhtsa', 'sam_gov', 'osha', 'usda_fsis', 'sec_edgar'],
+  city:          ['epa_echo', 'epa_tri', 'faa', 'nhtsa', 'sam_gov', 'osha', 'usda_fsis', 'sec_edgar'],
+  state:         ['epa_echo', 'epa_tri', 'faa', 'nhtsa', 'sam_gov', 'osha', 'usda_fsis', 'sec_edgar'],
+  zip:           ['epa_echo', 'epa_tri', 'faa', 'nhtsa', 'sam_gov', 'osha', 'usda_fsis', 'sec_edgar'],
   county:        ['epa_echo', 'epa_tri', 'osha', 'usda_fsis'],
   latitude:      ['epa_echo', 'epa_tri', 'osha'],
   longitude:     ['epa_echo', 'epa_tri', 'osha'],
-  companyName:   ['epa_tri', 'faa', 'nhtsa', 'manual', 'epa_echo', 'osha'],
-  naicsCode:     ['epa_echo', 'epa_tri', 'osha', 'usda_fsis'],
+  companyName:   ['sec_edgar', 'epa_tri', 'sam_gov', 'faa', 'nhtsa', 'manual', 'epa_echo', 'osha'],
+  naicsCode:     ['epa_echo', 'epa_tri', 'sam_gov', 'sec_edgar', 'osha', 'usda_fsis'],
   employeeCount: ['osha'],
 };
 

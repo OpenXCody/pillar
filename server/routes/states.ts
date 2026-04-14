@@ -85,6 +85,21 @@ statesRouter.get('/:code', async (req, res) => {
       .orderBy(sql`count(*) DESC`)
       .limit(15);
 
+    // Add company count per city
+    const cityCompanyCounts = await db
+      .select({
+        city: facilities.city,
+        companyCount: sql<number>`COUNT(DISTINCT ${facilities.companyId})`,
+      })
+      .from(facilities)
+      .where(sql`${facilities.state} = ${code} AND ${facilities.city} IS NOT NULL AND ${facilities.companyId} IS NOT NULL`)
+      .groupBy(facilities.city);
+
+    const cityCompanyMap: Record<string, number> = {};
+    for (const row of cityCompanyCounts) {
+      if (row.city) cityCompanyMap[row.city] = Number(row.companyCount);
+    }
+
     res.json({
       code,
       name,
@@ -104,6 +119,7 @@ statesRouter.get('/:code', async (req, res) => {
       topCities: topCities.map(r => ({
         city: r.city!,
         count: r.count,
+        companyCount: cityCompanyMap[r.city!] ?? 0,
       })),
     });
   } catch (err) {
