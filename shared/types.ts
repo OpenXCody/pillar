@@ -9,6 +9,7 @@ export interface SourceInfo {
   name: string;
   description: string;
   color: string;
+  gradient: string;  // CSS gradient for dots
 }
 
 export const DATA_SOURCES: Record<DataSource, SourceInfo> = {
@@ -17,60 +18,70 @@ export const DATA_SOURCES: Record<DataSource, SourceInfo> = {
     name: 'EPA ECHO',
     description: 'Enforcement & Compliance History — broadest facility coverage with coordinates',
     color: '#60A5FA',
+    gradient: 'linear-gradient(135deg, #3B82F6, #60A5FA)',
   },
   epa_tri: {
     key: 'epa_tri',
     name: 'EPA TRI',
     description: 'Toxics Release Inventory — parent company names and chemical reporting facilities',
     color: '#34D399',
+    gradient: 'linear-gradient(135deg, #10B981, #6EE7B7)',
   },
   osha: {
     key: 'osha',
     name: 'OSHA',
     description: 'Establishment inspection data with employee counts',
     color: '#FBBF24',
+    gradient: 'linear-gradient(135deg, #F59E0B, #FCD34D)',
   },
   usda_fsis: {
     key: 'usda_fsis',
     name: 'USDA FSIS',
     description: 'Meat, poultry, and egg processing plant directory',
     color: '#F87171',
+    gradient: 'linear-gradient(135deg, #EF4444, #FCA5A5)',
   },
   faa: {
     key: 'faa',
     name: 'FAA PAH',
     description: 'Production Approval Holders — PC, PMA, and TSOA certified manufacturers',
     color: '#38BDF8',
+    gradient: 'linear-gradient(135deg, #0EA5E9, #7DD3FC)',
   },
   nhtsa: {
     key: 'nhtsa',
     name: 'NHTSA',
     description: 'Registered vehicle and equipment manufacturers from the vPIC database',
     color: '#FB923C',
+    gradient: 'linear-gradient(135deg, #F97316, #FDBA74)',
   },
   sam_gov: {
     key: 'sam_gov',
     name: 'SAM.gov',
     description: 'Federal contractor registry — manufacturers registered in the System for Award Management',
     color: '#818CF8',
+    gradient: 'linear-gradient(135deg, #6366F1, #A5B4FC)',
   },
   sec_edgar: {
     key: 'sec_edgar',
     name: 'SEC EDGAR',
     description: 'Publicly traded manufacturers from Securities and Exchange Commission filings',
-    color: '#34D399',
+    color: '#2DD4BF',
+    gradient: 'linear-gradient(135deg, #14B8A6, #5EEAD4)',
   },
   census_cbp: {
     key: 'census_cbp',
     name: 'Census CBP',
     description: 'County Business Patterns — manufacturing establishment counts, employment, and payroll by county',
     color: '#F472B6',
+    gradient: 'linear-gradient(135deg, #EC4899, #F9A8D4)',
   },
   manual: {
     key: 'manual',
     name: 'Open X',
     description: 'Curated datasets from Open X Research & Development Team',
-    color: '#A78BFA',
+    color: '#C084FC',
+    gradient: 'linear-gradient(135deg, #A855F7, #E879F9)',
   },
 };
 
