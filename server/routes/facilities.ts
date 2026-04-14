@@ -7,7 +7,7 @@ export const facilitiesRouter = Router();
 
 /** Build filter conditions from query params (shared between list + count) */
 function buildFacilityFilters(query: Record<string, any>) {
-  const { search, state, naics, company } = query;
+  const { search, state, naics, company, minSources } = query;
   const conditions = [];
   if (search) {
     conditions.push(
@@ -17,6 +17,9 @@ function buildFacilityFilters(query: Record<string, any>) {
   if (state) conditions.push(eq(facilities.state, String(state)));
   if (naics) conditions.push(sql`${facilities.primaryNaics} LIKE ${String(naics) + '%'}`);
   if (company) conditions.push(ilike(facilities.companyName, `%${company}%`));
+  if (minSources && Number(minSources) > 1) {
+    conditions.push(sql`${facilities.sourceCount} >= ${Number(minSources)}`);
+  }
   return conditions;
 }
 

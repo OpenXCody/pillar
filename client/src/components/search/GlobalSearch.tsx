@@ -162,7 +162,7 @@ export default function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
     saveRecentSearch(query);
     onClose();
     if (item.type === 'companies') {
-      navigate(`/facilities?company=${encodeURIComponent(item.name)}`);
+      navigate(`/companies/${item.id}`);
     } else {
       navigate(`/facilities/${item.id}`);
     }
