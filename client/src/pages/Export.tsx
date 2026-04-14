@@ -246,29 +246,41 @@ export default function Export() {
           {previewLoading && <span className="text-xs text-fg-soft animate-pulse">Counting...</span>}
         </div>
 
-        <div className="grid grid-cols-3 gap-4 mb-5">
-          <div className="bg-bg-inset rounded-lg p-3 text-center">
-            <Factory className="w-4 h-4 text-fg-soft mx-auto mb-1" />
-            <div className="text-lg font-semibold text-fg-default">
-              {preview ? preview.facilityCount.toLocaleString() : '—'}
+        {exportType === 'factory' ? (
+          <div className="grid grid-cols-3 gap-4 mb-5">
+            <div className="bg-bg-inset rounded-lg p-3 text-center">
+              <Factory className="w-4 h-4 text-fg-soft mx-auto mb-1" />
+              <div className="text-lg font-semibold text-fg-default">
+                {preview ? preview.facilityCount.toLocaleString() : '—'}
+              </div>
+              <div className="text-xs text-fg-muted">Factories</div>
             </div>
-            <div className="text-xs text-fg-muted">Factories</div>
-          </div>
-          <div className="bg-bg-inset rounded-lg p-3 text-center">
-            <Building2 className="w-4 h-4 text-fg-soft mx-auto mb-1" />
-            <div className="text-lg font-semibold text-fg-default">
-              {preview ? preview.companyCount.toLocaleString() : '—'}
+            <div className="bg-bg-inset rounded-lg p-3 text-center">
+              <Building2 className="w-4 h-4 text-fg-soft mx-auto mb-1" />
+              <div className="text-lg font-semibold text-fg-default">
+                {preview ? preview.companyCount.toLocaleString() : '—'}
+              </div>
+              <div className="text-xs text-fg-muted">Companies</div>
             </div>
-            <div className="text-xs text-fg-muted">Companies</div>
-          </div>
-          <div className="bg-bg-inset rounded-lg p-3 text-center">
-            <MapPin className="w-4 h-4 text-fg-soft mx-auto mb-1" />
-            <div className="text-lg font-semibold text-fg-default">
-              {preview ? preview.stateCount : '—'}
+            <div className="bg-bg-inset rounded-lg p-3 text-center">
+              <MapPin className="w-4 h-4 text-fg-soft mx-auto mb-1" />
+              <div className="text-lg font-semibold text-fg-default">
+                {preview ? preview.stateCount : '—'}
+              </div>
+              <div className="text-xs text-fg-muted">States</div>
             </div>
-            <div className="text-xs text-fg-muted">States</div>
           </div>
-        </div>
+        ) : (
+          <div className="mb-5">
+            <div className="bg-bg-inset rounded-lg p-4 text-center">
+              <Building2 className="w-5 h-5 text-fg-soft mx-auto mb-1" />
+              <div className="text-2xl font-semibold text-fg-default">
+                {preview ? preview.companyCount.toLocaleString() : '—'}
+              </div>
+              <div className="text-xs text-fg-muted">Companies</div>
+            </div>
+          </div>
+        )}
 
         {overview && preview && (
           <div className="mb-4">
@@ -399,7 +411,7 @@ export default function Export() {
 }
 
 /** Autocomplete company search with factory count badges */
-function CompanyAutocomplete({ selected, onAdd, onRemove }: {
+function CompanyAutocomplete({ selected, onAdd }: {
   selected: string[];
   onAdd: (name: string) => void;
   onRemove: (name: string) => void;
@@ -428,24 +440,16 @@ function CompanyAutocomplete({ selected, onAdd, onRemove }: {
 
   return (
     <div ref={ref} className="relative">
-      <div className="flex items-center gap-2 bg-white/[0.02] border border-white/10 rounded-xl px-3 py-2">
+      <div className="flex items-center gap-2 bg-white/[0.02] border border-white/10 rounded-xl px-3 py-2.5">
         <Search className="w-3.5 h-3.5 text-indigo-400 flex-shrink-0" />
-        <div className="flex items-center gap-1.5 flex-wrap flex-1">
-          {selected.map(name => (
-            <span key={name} className="px-2 py-0.5 bg-white/5 text-fg-muted text-xs rounded flex items-center gap-1 border border-white/10">
-              {name}
-              <button onClick={() => onRemove(name)} className="hover:text-fg-default">&times;</button>
-            </span>
-          ))}
-          <input
-            type="text"
-            placeholder={selected.length > 0 ? 'Add company...' : 'Search companies...'}
-            value={query}
-            onChange={e => { setQuery(e.target.value); setOpen(true); }}
-            onFocus={() => query.length >= 2 && setOpen(true)}
-            className="flex-1 min-w-[140px] text-sm text-fg-default placeholder:text-fg-soft bg-transparent outline-none"
-          />
-        </div>
+        <input
+          type="text"
+          placeholder={selected.length > 0 ? 'Add another company...' : 'Search companies...'}
+          value={query}
+          onChange={e => { setQuery(e.target.value); setOpen(true); }}
+          onFocus={() => query.length >= 2 && setOpen(true)}
+          className="flex-1 text-sm text-fg-default placeholder:text-fg-soft bg-transparent outline-none"
+        />
       </div>
 
       {/* Dropdown results */}
