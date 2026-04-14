@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -13,14 +13,14 @@ import {
   Layers,
   Loader2,
 } from 'lucide-react';
-import { facilitiesApi } from '@/lib/api';
+import { facilitiesApi, companiesApi } from '@/lib/api';
 
 interface GlobalSearchProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-type SearchEntityType = 'facilities' | 'companies' | 'states';
+type SearchEntityType = 'facilities' | 'companies';
 
 interface SearchResultItem {
   id: string;
@@ -32,33 +32,25 @@ interface SearchResultItem {
 
 const ENTITY_CONFIG: Record<
   SearchEntityType,
-  { icon: React.ElementType; label: string; iconClass: string; path: string }
+  { icon: React.ElementType; label: string; iconClass: string }
 > = {
   facilities: {
     icon: Factory,
-    label: 'Facility',
+    label: 'Factory',
     iconClass: 'text-sky-400',
-    path: '/facilities',
   },
   companies: {
     icon: Building2,
     label: 'Company',
     iconClass: 'text-amber-500',
-    path: '/facilities',
-  },
-  states: {
-    icon: MapPin,
-    label: 'State',
-    iconClass: 'text-indigo-500',
-    path: '/facilities',
   },
 };
 
 const QUICK_LINKS = [
-  { label: 'Browse all facilities', path: '/facilities', icon: Factory, iconClass: 'text-sky-400' },
+  { label: 'Browse all factories', path: '/facilities', icon: Factory, iconClass: 'text-sky-400' },
+  { label: 'Browse companies', path: '/companies', icon: Building2, iconClass: 'text-amber-500' },
   { label: 'View data sources', path: '/sources', icon: Database, iconClass: 'text-emerald-400' },
   { label: 'Review duplicates', path: '/review', icon: GitCompare, iconClass: 'text-violet-400' },
-  { label: 'Export for Archangel', path: '/export', icon: Building2, iconClass: 'text-amber-500' },
 ];
 
 const RECENT_SEARCHES_KEY = 'pillar_recent_searches';
@@ -93,23 +85,55 @@ export default function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
     }
   }, [isOpen]);
 
-  const { data: searchResults, isLoading } = useQuery({
-    queryKey: ['search', debouncedQuery],
-    queryFn: () => facilitiesApi.list({ search: debouncedQuery, limit: 10 }),
+  // Search facilities
+  const { data: facilityResults, isLoading: facilitiesLoading } = useQuery({
+    queryKey: ['search', 'facilities', debouncedQuery],
+    queryFn: () => facilitiesApi.list({ search: debouncedQuery, limit: 8 }),
     enabled: debouncedQuery.length >= 1,
     staleTime: 30000,
   });
 
-  const flatResults = useCallback((): SearchResultItem[] => {
-    if (!searchResults?.data) return [];
-    return searchResults.data.map(f => ({
-      id: f.id,
-      type: 'facilities' as const,
-      name: f.name,
-      subtitle: f.companyName || null,
-      meta: [f.city, f.state].filter(Boolean).join(', ') || null,
-    }));
-  }, [searchResults]);
+  // Search companies
+  const { data: companyResults, isLoading: companiesLoading } = useQuery({
+    queryKey: ['search', 'companies', debouncedQuery],
+    queryFn: () => companiesApi.list({ search: debouncedQuery, limit: 5 }),
+    enabled: debouncedQuery.length >= 1,
+    staleTime: 30000,
+  });
+
+  const isLoading = facilitiesLoading || companiesLoading;
+
+  const flatResults = useMemo((): SearchResultItem[] => {
+    const items: SearchResultItem[] = [];
+
+    // Companies first (fewer, higher signal)
+    if (companyResults?.data) {
+      for (const c of companyResults.data) {
+        items.push({
+          id: c.id,
+          type: 'companies',
+          name: c.name,
+          subtitle: c.sector || 'Manufacturing',
+          meta: `${c.facilityCount} ${c.facilityCount === 1 ? 'factory' : 'factories'}`,
+        });
+      }
+    }
+
+    // Then facilities
+    if (facilityResults?.data) {
+      for (const f of facilityResults.data) {
+        items.push({
+          id: f.id,
+          type: 'facilities',
+          name: f.name,
+          subtitle: f.companyName || null,
+          meta: [f.city, f.state].filter(Boolean).join(', ') || null,
+        });
+      }
+    }
+
+    return items;
+  }, [facilityResults, companyResults]);
 
   const saveRecentSearch = useCallback((searchQuery: string) => {
     if (!searchQuery.trim()) return;
@@ -137,7 +161,11 @@ export default function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
   const navigateToResult = useCallback((item: SearchResultItem) => {
     saveRecentSearch(query);
     onClose();
-    navigate(`/facilities/${item.id}`);
+    if (item.type === 'companies') {
+      navigate(`/facilities?company=${encodeURIComponent(item.name)}`);
+    } else {
+      navigate(`/facilities/${item.id}`);
+    }
   }, [navigate, onClose, query, saveRecentSearch]);
 
   const navigateToQuickLink = useCallback((path: string) => {
@@ -148,12 +176,11 @@ export default function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
   useEffect(() => {
     if (!isOpen) return;
     const handleKeyDown = (e: KeyboardEvent) => {
-      const results = flatResults();
       switch (e.key) {
         case 'Escape': onClose(); break;
         case 'ArrowDown':
           e.preventDefault();
-          setSelectedIndex(prev => Math.min(prev + 1, results.length - 1));
+          setSelectedIndex(prev => Math.min(prev + 1, flatResults.length - 1));
           break;
         case 'ArrowUp':
           e.preventDefault();
@@ -161,7 +188,7 @@ export default function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
           break;
         case 'Enter':
           e.preventDefault();
-          if (results[selectedIndex]) navigateToResult(results[selectedIndex]);
+          if (flatResults[selectedIndex]) navigateToResult(flatResults[selectedIndex]);
           break;
       }
     };
@@ -169,14 +196,19 @@ export default function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, flatResults, selectedIndex, onClose, navigateToResult]);
 
-  useEffect(() => { setSelectedIndex(0); }, [searchResults]);
+  useEffect(() => { setSelectedIndex(0); }, [facilityResults, companyResults]);
 
   if (!isOpen) return null;
 
-  const results = flatResults();
   const hasQuery = debouncedQuery.length >= 1;
-  const hasResults = results.length > 0;
+  const hasResults = flatResults.length > 0;
   const showNoResults = hasQuery && !isLoading && !hasResults;
+
+  // Group results by type for section headers
+  const companyCount = flatResults.filter(r => r.type === 'companies').length;
+  const facilityCount = flatResults.filter(r => r.type === 'facilities').length;
+
+  let resultIndex = 0;
 
   return (
     <>
@@ -197,7 +229,7 @@ export default function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
               type="text"
               value={query}
               onChange={e => setQuery(e.target.value)}
-              placeholder="Search Pillar..."
+              placeholder="Search factories and companies..."
               className="flex-1 bg-transparent text-fg-default placeholder:text-fg-soft text-base"
               style={{ outline: 'none', border: 'none', boxShadow: 'none', WebkitAppearance: 'none' }}
             />
@@ -256,32 +288,79 @@ export default function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
             {/* Results */}
             {hasQuery && hasResults && (
               <div className="py-2">
-                <div className="px-4 py-2">
-                  <h4 className="text-xs font-medium text-fg-soft uppercase tracking-wider mb-2">
-                    Facilities <span className="ml-2 text-fg-soft/50">{results.length}</span>
-                  </h4>
-                  <div className="space-y-1">
-                    {results.map((item, index) => {
-                      const isSelected = index === selectedIndex;
-                      return (
-                        <div
-                          key={item.id}
-                          className={`flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer ${isSelected ? 'bg-white/10' : 'hover:bg-white/5'}`}
-                          onClick={() => navigateToResult(item)}
-                          onMouseEnter={() => setSelectedIndex(index)}
-                        >
-                          <Factory className="w-4 h-4 flex-shrink-0 text-sky-400" />
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm text-fg-default truncate">{item.name}</p>
-                            {item.subtitle && <p className="text-xs text-fg-soft truncate">{item.subtitle}</p>}
+                {/* Companies section */}
+                {companyCount > 0 && (
+                  <div className="px-4 py-2">
+                    <h4 className="text-xs font-medium text-fg-soft uppercase tracking-wider mb-2">
+                      Companies <span className="ml-1 text-fg-soft/50">{companyCount}</span>
+                    </h4>
+                    <div className="space-y-1">
+                      {flatResults.filter(r => r.type === 'companies').map((item) => {
+                        const idx = resultIndex++;
+                        const isSelected = idx === selectedIndex;
+                        const config = ENTITY_CONFIG[item.type];
+                        const Icon = config.icon;
+                        return (
+                          <div
+                            key={`c-${item.id}`}
+                            className={`flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer ${isSelected ? 'bg-white/10' : 'hover:bg-white/5'}`}
+                            onClick={() => navigateToResult(item)}
+                            onMouseEnter={() => setSelectedIndex(idx)}
+                          >
+                            <Icon className={`w-4 h-4 flex-shrink-0 ${config.iconClass}`} />
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm text-fg-default truncate">{item.name}</p>
+                              {item.subtitle && <p className="text-xs text-fg-soft truncate">{item.subtitle}</p>}
+                            </div>
+                            {item.meta && <span className="text-xs text-fg-soft flex-shrink-0">{item.meta}</span>}
+                            <span className={`text-xs px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20`}>
+                              {config.label}
+                            </span>
                           </div>
-                          {item.meta && <span className="text-xs text-fg-soft flex-shrink-0">{item.meta}</span>}
-                          <span className="text-xs px-2 py-0.5 rounded-full bg-white/5 text-fg-soft border border-white/10">Facility</span>
-                        </div>
-                      );
-                    })}
+                        );
+                      })}
+                    </div>
                   </div>
-                </div>
+                )}
+
+                {/* Factories section */}
+                {facilityCount > 0 && (
+                  <div className="px-4 py-2">
+                    <h4 className="text-xs font-medium text-fg-soft uppercase tracking-wider mb-2">
+                      Factories <span className="ml-1 text-fg-soft/50">{facilityCount}</span>
+                    </h4>
+                    <div className="space-y-1">
+                      {flatResults.filter(r => r.type === 'facilities').map((item) => {
+                        const idx = resultIndex++;
+                        const isSelected = idx === selectedIndex;
+                        const config = ENTITY_CONFIG[item.type];
+                        const Icon = config.icon;
+                        return (
+                          <div
+                            key={`f-${item.id}`}
+                            className={`flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer ${isSelected ? 'bg-white/10' : 'hover:bg-white/5'}`}
+                            onClick={() => navigateToResult(item)}
+                            onMouseEnter={() => setSelectedIndex(idx)}
+                          >
+                            <Icon className={`w-4 h-4 flex-shrink-0 ${config.iconClass}`} />
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm text-fg-default truncate">{item.name}</p>
+                              {item.subtitle && <p className="text-xs text-fg-soft truncate">{item.subtitle}</p>}
+                            </div>
+                            {item.meta && (
+                              <span className="text-xs text-fg-soft flex-shrink-0 flex items-center gap-1">
+                                <MapPin className="w-3 h-3" />{item.meta}
+                              </span>
+                            )}
+                            <span className="text-xs px-2 py-0.5 rounded-full bg-sky-500/10 text-sky-400 border border-sky-500/20">
+                              {config.label}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
@@ -302,7 +381,7 @@ export default function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
             )}
 
             {/* Loading */}
-            {hasQuery && isLoading && (
+            {hasQuery && isLoading && !hasResults && (
               <div className="px-4 py-8 flex items-center justify-center">
                 <Loader2 className="w-6 h-6 text-fg-soft animate-spin" />
               </div>

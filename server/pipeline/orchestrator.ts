@@ -29,9 +29,26 @@ export interface PipelineResult {
 let isRunning = false;
 let currentStage: string | null = null;
 let currentSource: string | null = null;
+let stageProgress: number = 0;   // 0-100
+let stageLabel: string | null = null;
+let syncStartedAt: number | null = null;
 
 export function getPipelineStatus() {
-  return { running: isRunning, currentStage, currentSource };
+  return {
+    running: isRunning,
+    currentStage,
+    currentSource,
+    stageProgress,
+    stageLabel,
+    elapsedMs: syncStartedAt ? Date.now() - syncStartedAt : null,
+  };
+}
+
+/** Update progress visible to the status endpoint */
+export function updateProgress(stage: string, progress: number, label: string) {
+  currentStage = stage;
+  stageProgress = Math.min(100, Math.max(0, progress));
+  stageLabel = label;
 }
 
 /**
@@ -42,6 +59,9 @@ export async function runPipeline(source: DataSource): Promise<PipelineResult> {
 
   isRunning = true;
   currentSource = source;
+  syncStartedAt = Date.now();
+  stageProgress = 0;
+  stageLabel = 'Starting...';
   const startTime = Date.now();
 
   const result: PipelineResult = {
@@ -62,6 +82,8 @@ export async function runPipeline(source: DataSource): Promise<PipelineResult> {
 
     // Stage 1: Fetch
     currentStage = 'fetching';
+    stageProgress = 5;
+    stageLabel = 'Downloading records...';
     console.log(`[Pipeline] Stage 1: Fetching ${source}...`);
 
     let fetchResult;
@@ -80,6 +102,8 @@ export async function runPipeline(source: DataSource): Promise<PipelineResult> {
 
     // Stage 2: Match
     currentStage = 'matching';
+    stageProgress = 40;
+    stageLabel = `Fetched ${fetchResult.totalFetched.toLocaleString()} records. Matching...`;
     console.log(`[Pipeline] Stage 2: Matching...`);
     await db.update(sourceRuns).set({ status: 'matching' }).where(eq(sourceRuns.id, run.id));
 
@@ -95,6 +119,8 @@ export async function runPipeline(source: DataSource): Promise<PipelineResult> {
 
     // Stage 3: Merge
     currentStage = 'merging';
+    stageProgress = 70;
+    stageLabel = 'Building golden records...';
     console.log(`[Pipeline] Stage 3: Merging golden records...`);
     await db.update(sourceRuns).set({ status: 'merging' }).where(eq(sourceRuns.id, run.id));
 
@@ -112,6 +138,8 @@ export async function runPipeline(source: DataSource): Promise<PipelineResult> {
       durationMs: Date.now() - startTime,
     }).where(eq(sourceRuns.id, run.id));
 
+    stageProgress = 100;
+    stageLabel = 'Complete!';
     result.durationMs = Date.now() - startTime;
     console.log(`[Pipeline] Complete in ${(result.durationMs / 1000).toFixed(1)}s`);
 
@@ -119,11 +147,15 @@ export async function runPipeline(source: DataSource): Promise<PipelineResult> {
   } catch (err) {
     result.error = String(err);
     result.durationMs = Date.now() - startTime;
+    stageLabel = `Failed: ${String(err).slice(0, 80)}`;
     console.error(`[Pipeline] Failed:`, err);
     throw err;
   } finally {
     isRunning = false;
     currentStage = null;
     currentSource = null;
+    stageProgress = 0;
+    stageLabel = null;
+    syncStartedAt = null;
   }
 }

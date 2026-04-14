@@ -39,6 +39,11 @@ export const facilitiesApi = {
   count: (params: { search?: string; state?: string; naics?: string; company?: string }) =>
     apiFetch<{ count: number }>(`/facilities/count${buildQuery(params)}`),
   get: (id: string) => apiFetch<import('@shared/types').FacilityDetail>(`/facilities/${id}`),
+  update: (id: string, data: Partial<import('@shared/types').Facility>) =>
+    apiFetch<{ facility: import('@shared/types').FacilityDetail; fieldsUpdated: string[] }>(`/facilities/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    }),
 };
 
 export const sourcesApi = {
@@ -65,5 +70,5 @@ export const pipelineApi = {
   run: (source?: string) =>
     apiFetch<{ runId: string }>('/pipeline/run', { method: 'POST', body: JSON.stringify({ source }) }),
   status: () =>
-    apiFetch<{ running: boolean; currentStage: string | null; currentSource: string | null }>('/pipeline/status'),
+    apiFetch<{ running: boolean; currentStage: string | null; currentSource: string | null; stageProgress: number; stageLabel: string | null; elapsedMs: number | null }>('/pipeline/status'),
 };

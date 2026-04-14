@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { statsApi } from '@/lib/api';
+import { statsApi, pipelineApi } from '@/lib/api';
 import { DATA_SOURCES } from '@shared/types';
-import { Database, Factory, Building2, GitCompare, Play, ArrowRight, ChevronDown, ChevronUp } from 'lucide-react';
+import { Database, Factory, Building2, GitCompare, ArrowRight, ChevronDown, ChevronUp, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 
 const INITIAL_STATES_SHOWN = 10;
 
@@ -13,6 +13,12 @@ export default function Overview() {
   const { data: stats, isLoading } = useQuery({
     queryKey: ['stats', 'overview'],
     queryFn: statsApi.overview,
+  });
+
+  const { data: pipelineStatus } = useQuery({
+    queryKey: ['pipeline-status'],
+    queryFn: pipelineApi.status,
+    refetchInterval: 3000,
   });
 
   const visibleStates = showAllStates
@@ -67,41 +73,69 @@ export default function Overview() {
           </button>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {Object.values(DATA_SOURCES).filter(s => s.key !== 'manual').map(source => (
-            <div
-              key={source.key}
-              className="
-                group p-4
-                bg-white/[0.02] backdrop-blur-sm
-                border border-white/5 rounded-xl
-                hover:bg-white/[0.05] hover:border-white/10
-                transition-all duration-200
-              "
-            >
-              <div className="flex items-center gap-3 mb-2">
-                <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: source.color }} />
-                <span className="text-sm font-medium text-fg-default">{source.name}</span>
-                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">Federal</span>
-                {(source.key === 'osha' || source.key === 'usda_fsis') && (
-                  <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-white/5 text-fg-soft border border-white/10">V2</span>
+          {Object.values(DATA_SOURCES).filter(s => s.key !== 'manual').map(source => {
+            const recordCount = stats?.bySource[source.key] ?? 0;
+            const isSynced = recordCount > 0;
+            const isV2 = source.key === 'osha' || source.key === 'usda_fsis';
+            const isSyncing = pipelineStatus?.running && pipelineStatus.currentSource === source.key;
+            return (
+              <div
+                key={source.key}
+                onClick={() => navigate('/sources')}
+                className={`
+                  group p-4 cursor-pointer
+                  bg-white/[0.02] backdrop-blur-sm
+                  rounded-xl
+                  hover:bg-white/[0.05] hover:border-white/10
+                  transition-all duration-200
+                  ${isSyncing ? 'border border-emerald-500/20' : 'border border-white/5'}
+                `}
+              >
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: source.color }} />
+                  <span className="text-sm font-medium text-fg-default">{source.name}</span>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">Federal</span>
+                  {isV2 && (
+                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-white/5 text-fg-soft border border-white/10">V2</span>
+                  )}
+                </div>
+                <p className="text-xs text-fg-soft line-clamp-2">{source.description}</p>
+                {isSyncing ? (
+                  <div className="mt-3 space-y-1.5">
+                    <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-emerald-500 rounded-full transition-all duration-1000 ease-out"
+                        style={{ width: `${pipelineStatus?.stageProgress ?? 0}%` }}
+                      />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] text-fg-soft truncate">{pipelineStatus?.stageLabel ?? 'Starting...'}</span>
+                      <span className="flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                        <Loader2 className="w-3 h-3 animate-spin" /> Syncing
+                      </span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="mt-3 flex items-center justify-between">
+                    <span className="text-xs text-fg-muted">
+                      {isLoading ? '...' : `${recordCount.toLocaleString()} records`}
+                    </span>
+                    {isV2 ? (
+                      <span className="text-[10px] text-fg-soft">Coming Soon</span>
+                    ) : isSynced ? (
+                      <span className="flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                        <CheckCircle2 className="w-3 h-3" /> Synced
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                        <AlertCircle className="w-3 h-3" /> Update Ready
+                      </span>
+                    )}
+                  </div>
                 )}
               </div>
-              <p className="text-xs text-fg-soft line-clamp-2">{source.description}</p>
-              <div className="mt-3 flex items-center justify-between">
-                <span className="text-xs text-fg-muted">
-                  {isLoading ? '...' : `${(stats?.bySource[source.key] ?? 0).toLocaleString()} records`}
-                </span>
-                {(source.key === 'epa_echo' || source.key === 'epa_tri') && (
-                  <button
-                    onClick={() => navigate('/sources')}
-                    className="flex items-center gap-1 text-xs text-fg-soft hover:text-fg-muted transition-colors"
-                  >
-                    <Play className="w-3 h-3" /> Fetch
-                  </button>
-                )}
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
@@ -110,10 +144,10 @@ export default function Overview() {
         <div>
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-medium text-fg-muted">
-              {showAllStates ? 'All States & Territories' : 'Top States'} by Factory Count
+              {showAllStates ? 'All States' : 'Top States'} by Factory Count
             </h3>
             <span className="text-xs text-fg-soft">
-              {stats.byState.length} regions
+              {stats.byState.length} states
             </span>
           </div>
           <div className="bg-white/[0.02] backdrop-blur-sm border border-white/5 rounded-xl p-4 space-y-2.5">
@@ -147,7 +181,7 @@ export default function Overview() {
                 {showAllStates ? (
                   <>Show Less <ChevronUp className="w-3 h-3" /></>
                 ) : (
-                  <>Show All {stats.byState.length} Regions <ChevronDown className="w-3 h-3" /></>
+                  <>Show All {stats.byState.length} States <ChevronDown className="w-3 h-3" /></>
                 )}
               </button>
             )}

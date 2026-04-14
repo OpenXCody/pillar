@@ -58,7 +58,7 @@ export default function Layout() {
             "
           >
             <Search className="w-4 h-4" />
-            <span className="flex-1 text-left">Search...</span>
+            <span className="flex-1 text-left">Global Search</span>
             <kbd className="flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-bg-elevated text-xs text-fg-soft border border-border-subtle">
               <span className="text-[10px]">&#8984;</span>K
             </kbd>
@@ -87,14 +87,26 @@ export default function Layout() {
 
         <div className="p-4 border-t border-border-subtle space-y-2">
           {pipelineStatus?.running && pipelineStatus.currentSource && (
-            <div className="flex items-center gap-2">
-              <span className="relative flex h-2.5 w-2.5">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500" />
-              </span>
-              <span className="text-xs text-fg-muted truncate">
-                Fetching {DATA_SOURCES[pipelineStatus.currentSource as DataSource]?.name ?? pipelineStatus.currentSource}...
-              </span>
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <span className="relative flex h-2.5 w-2.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500" />
+                </span>
+                <span className="text-xs text-fg-muted truncate">
+                  Syncing {DATA_SOURCES[pipelineStatus.currentSource as DataSource]?.name ?? pipelineStatus.currentSource}
+                </span>
+              </div>
+              {/* Progress bar */}
+              <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-emerald-500 rounded-full transition-all duration-1000 ease-out"
+                  style={{ width: `${pipelineStatus.stageProgress ?? 0}%` }}
+                />
+              </div>
+              {pipelineStatus.stageLabel && (
+                <p className="text-[10px] text-fg-soft truncate">{pipelineStatus.stageLabel}</p>
+              )}
             </div>
           )}
           <p className="text-xs text-fg-soft">Companion to Archangel</p>

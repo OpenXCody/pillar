@@ -85,7 +85,7 @@ export default function Facilities() {
           <Search className="w-4 h-4 text-fg-soft" />
           <input
             type="text"
-            placeholder="Search factories or companies..."
+            placeholder="Search factories..."
             value={search}
             onChange={e => { setSearch(e.target.value); setCursor(undefined); setPrevPages([]); }}
             className="flex-1 text-sm text-fg-default placeholder:text-fg-soft bg-transparent"

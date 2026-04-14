@@ -20,10 +20,21 @@ export interface NormalizedNames {
 /**
  * Normalize a facility name: trim, collapse whitespace, remove artifacts.
  */
+/** Decode common HTML entities that appear in federal data */
+function decodeHtmlEntities(str: string): string {
+  return str
+    .replace(/&AMP;/gi, '&')
+    .replace(/&LT;/gi, '<')
+    .replace(/&GT;/gi, '>')
+    .replace(/&QUOT;/gi, '"')
+    .replace(/&APOS;/gi, "'")
+    .replace(/&#(\d+);/g, (_m, code) => String.fromCharCode(parseInt(code)));
+}
+
 export function normalizeFacilityName(raw: string | null): string | null {
   if (!raw) return null;
 
-  let name = raw
+  let name = decodeHtmlEntities(raw)
     .trim()
     .replace(/\s+/g, ' ')
     // Remove trailing punctuation artifacts

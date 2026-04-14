@@ -1,13 +1,33 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { sourcesApi } from '@/lib/api';
+import { sourcesApi, pipelineApi } from '@/lib/api';
 import { DATA_SOURCES } from '@shared/types';
-import { RefreshCw, Clock, CheckCircle2, XCircle, Loader2, Shield } from 'lucide-react';
+import { Clock, CheckCircle2, XCircle, Loader2, Shield, AlertCircle } from 'lucide-react';
+
+function formatCST(dateStr: string): string {
+  const d = new Date(dateStr);
+  return d.toLocaleString('en-US', {
+    timeZone: 'America/Chicago',
+    month: 'numeric',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: true,
+  }) + ' CST';
+}
 
 export default function Sources() {
   const queryClient = useQueryClient();
   const { data, isLoading } = useQuery({
     queryKey: ['sources'],
     queryFn: sourcesApi.list,
+  });
+
+  const { data: pipelineStatus } = useQuery({
+    queryKey: ['pipeline-status'],
+    queryFn: pipelineApi.status,
+    refetchInterval: 3000,
   });
 
   const fetchMutation = useMutation({
@@ -20,6 +40,7 @@ export default function Sources() {
 
   const federalSources = Object.values(DATA_SOURCES).filter(s => s.key !== 'manual');
   const manualSource = DATA_SOURCES.manual;
+  const isPipelineRunning = pipelineStatus?.running ?? false;
 
   return (
     <div className="space-y-6">
@@ -27,6 +48,35 @@ export default function Sources() {
         <h2 className="text-xl font-semibold text-fg-default">Data Sources</h2>
         <p className="text-sm text-fg-muted mt-1">Federal and partner datasets powering the pipeline</p>
       </div>
+
+      {/* Sync in progress banner */}
+      {isPipelineRunning && pipelineStatus?.currentSource && (
+        <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-xl p-4">
+          <div className="flex items-center gap-3 mb-2">
+            <span className="relative flex h-2.5 w-2.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500" />
+            </span>
+            <span className="text-sm font-medium text-emerald-400">
+              Syncing {DATA_SOURCES[pipelineStatus.currentSource as keyof typeof DATA_SOURCES]?.name ?? pipelineStatus.currentSource}
+            </span>
+            {pipelineStatus.elapsedMs && (
+              <span className="text-xs text-fg-soft ml-auto">
+                {Math.round(pipelineStatus.elapsedMs / 1000)}s elapsed
+              </span>
+            )}
+          </div>
+          <div className="w-full h-2 bg-white/5 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-emerald-500 rounded-full transition-all duration-1000 ease-out"
+              style={{ width: `${pipelineStatus.stageProgress ?? 0}%` }}
+            />
+          </div>
+          {pipelineStatus.stageLabel && (
+            <p className="text-xs text-fg-soft mt-1.5">{pipelineStatus.stageLabel}</p>
+          )}
+        </div>
+      )}
 
       {/* Federal Sources */}
       <div>
@@ -38,9 +88,11 @@ export default function Sources() {
           {federalSources.map(source => {
             const info = data?.sources.find(s => s.key === source.key);
             const lastRun = info?.lastRun;
-            const isFetching = fetchMutation.isPending && fetchMutation.variables === source.key;
+            const recordCount = info?.rawRecordCount ?? 0;
+            const isSyncing = isPipelineRunning && pipelineStatus?.currentSource === source.key;
             const isV2 = source.key === 'osha' || source.key === 'usda_fsis';
             const isActive = source.key === 'epa_echo' || source.key === 'epa_tri';
+            const isSynced = recordCount > 0 && lastRun?.status === 'completed';
 
             return (
               <div key={source.key} className="bg-white/[0.02] backdrop-blur-sm border border-white/5 rounded-xl p-5">
@@ -58,15 +110,28 @@ export default function Sources() {
                       <p className="text-xs text-fg-soft mt-0.5">{source.description}</p>
                     </div>
                   </div>
-                  {isActive ? (
-                    <button
-                      onClick={() => fetchMutation.mutate(source.key)}
-                      disabled={isFetching}
-                      className="flex items-center justify-center gap-2 w-[120px] flex-shrink-0 px-3 py-1.5 bg-white/[0.03] border border-white/10 rounded-full text-xs font-medium text-fg-default hover:bg-white/[0.08] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {isFetching ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
-                      {isFetching ? 'Verifying...' : 'Re-Verify'}
-                    </button>
+                  {isSyncing ? (
+                    <span className="flex items-center gap-2 flex-shrink-0 px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded-full text-xs font-medium text-emerald-400">
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" /> Syncing...
+                    </span>
+                  ) : isActive ? (
+                    isSynced ? (
+                      <button
+                        onClick={() => fetchMutation.mutate(source.key)}
+                        disabled={isPipelineRunning}
+                        className="flex items-center justify-center gap-2 flex-shrink-0 px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded-full text-xs font-medium text-emerald-400 hover:bg-emerald-500/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                      >
+                        <CheckCircle2 className="w-3.5 h-3.5" /> Synced
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => fetchMutation.mutate(source.key)}
+                        disabled={isPipelineRunning}
+                        className="flex items-center justify-center gap-2 flex-shrink-0 px-3 py-1.5 bg-amber-500/10 border border-amber-500/20 rounded-full text-xs font-medium text-amber-400 hover:bg-amber-500/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                      >
+                        <AlertCircle className="w-3.5 h-3.5" /> Update Ready
+                      </button>
+                    )
                   ) : (
                     <span className="flex-shrink-0 px-3 py-1.5 text-xs text-fg-soft border border-white/5 rounded-full">
                       Coming Soon
@@ -75,7 +140,7 @@ export default function Sources() {
                 </div>
 
                 <div className="mt-4 flex items-center gap-6 text-xs text-fg-muted">
-                  <span>{isLoading ? '...' : `${(info?.rawRecordCount ?? 0).toLocaleString()} records`}</span>
+                  <span>{isLoading ? '...' : `${recordCount.toLocaleString()} records`}</span>
                   {lastRun && (
                     <>
                       <span className="flex items-center gap-1">
@@ -86,7 +151,7 @@ export default function Sources() {
                         ) : (
                           <Clock className="w-3 h-3" />
                         )}
-                        Last run: {new Date(lastRun.startedAt).toLocaleDateString()}
+                        Last synced: {formatCST(lastRun.startedAt)}
                       </span>
                       {lastRun.durationMs && (
                         <span>{(lastRun.durationMs / 1000).toFixed(1)}s</span>

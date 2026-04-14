@@ -28,13 +28,22 @@ statsRouter.get('/overview', async (_req, res) => {
       bySource[row.source] = row.count;
     }
 
-    // All states (sorted by count)
-    const topStates = await db
+    // US states only — exclude non-state territories (GU, VI, MP, AS, XF, etc.)
+    const US_STATES_SET = new Set([
+      'AL','AK','AZ','AR','CA','CO','CT','DE','FL','GA',
+      'HI','ID','IL','IN','IA','KS','KY','LA','ME','MD',
+      'MA','MI','MN','MS','MO','MT','NE','NV','NH','NJ',
+      'NM','NY','NC','ND','OH','OK','OR','PA','RI','SC',
+      'SD','TN','TX','UT','VT','VA','WA','WV','WI','WY',
+      'DC','PR',
+    ]);
+    const allStates = await db
       .select({ state: facilities.state, count: count() })
       .from(facilities)
       .where(sql`${facilities.state} IS NOT NULL`)
       .groupBy(facilities.state)
       .orderBy(sql`count(*) DESC`);
+    const topStates = allStates.filter(r => r.state && US_STATES_SET.has(r.state));
 
     res.json({
       totalFacilities: facilityCount.count,
