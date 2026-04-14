@@ -188,9 +188,15 @@ exportRouter.post('/generate', async (req, res) => {
  */
 exportRouter.get('/preview', async (req, res) => {
   try {
-    const { states, naicsPrefix, minSources, minConfidence, hasCompany, hasCoordinates } = req.query;
+    const { states, naicsPrefix, minConfidence, hasCompany, hasCoordinates } = req.query;
+
+    // Valid US states (50 + DC) — excludes territories
+    const VALID_STATES = ['AL','AK','AZ','AR','CA','CO','CT','DE','DC','FL','GA','HI','ID','IL','IN','IA','KS','KY','LA','ME','MD','MA','MI','MN','MS','MO','MT','NE','NV','NH','NJ','NM','NY','NC','ND','OH','OK','OR','PA','RI','SC','SD','TN','TX','UT','VT','VA','WA','WV','WI','WY'];
 
     const conditions: ReturnType<typeof eq>[] = [];
+
+    // Always filter to valid US states for export
+    conditions.push(inArray(facilities.state, VALID_STATES));
 
     if (states && typeof states === 'string') {
       const stateList = states.split(',').filter(Boolean);
@@ -198,9 +204,6 @@ exportRouter.get('/preview', async (req, res) => {
     }
     if (naicsPrefix) {
       conditions.push(like(facilities.primaryNaics, `${naicsPrefix}%`));
-    }
-    if (minSources && Number(minSources) > 1) {
-      conditions.push(gte(facilities.sourceCount, Number(minSources)));
     }
     if (minConfidence) {
       conditions.push(gte(facilities.confidence, Number(minConfidence)));
@@ -220,7 +223,7 @@ exportRouter.get('/preview', async (req, res) => {
         stateCount: sql<number>`count(distinct state)::int`,
       })
       .from(facilities)
-      .where(conditions.length > 0 ? and(...conditions) : undefined);
+      .where(and(...conditions));
 
     res.json({
       facilityCount: result.facilityCount,
