@@ -157,7 +157,8 @@ export default function Export() {
           <select
             value={filters.minConfidence}
             onChange={(e) => setFilters(f => ({ ...f, minConfidence: Number(e.target.value) }))}
-            className="bg-bg-surface/95 backdrop-blur-xl border border-white/10 rounded-xl px-3 py-2.5 text-sm text-fg-default min-w-[150px]"
+            className="bg-white/[0.03] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-fg-default min-w-[150px]"
+            style={{ colorScheme: 'dark' }}
           >
             <option value="0">Any confidence</option>
             <option value="50">50+ (Complete)</option>
@@ -170,7 +171,8 @@ export default function Export() {
             <select
               value={filters.minFacilities}
               onChange={(e) => setFilters(f => ({ ...f, minFacilities: Number(e.target.value) }))}
-              className="bg-bg-surface/95 backdrop-blur-xl border border-white/10 rounded-xl px-3 py-2.5 text-sm text-fg-default min-w-[150px]"
+              className="bg-white/[0.03] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-fg-default min-w-[150px]"
+            style={{ colorScheme: 'dark' }}
             >
               <option value="1">Any size</option>
               <option value="5">5+ factories</option>
@@ -185,27 +187,27 @@ export default function Export() {
         {hasActiveFilters && (
           <div className="flex items-center gap-2 flex-wrap">
             {filters.states.map(s => (
-              <span key={s} className="px-2 py-0.5 bg-indigo-500/20 text-indigo-400 text-xs rounded flex items-center gap-1">
+              <span key={s} className="px-2 py-0.5 bg-white/5 text-fg-muted text-xs rounded flex items-center gap-1 border border-white/10">
                 {s}
-                <button onClick={() => setFilters(f => ({ ...f, states: f.states.filter(x => x !== s) }))} className="hover:text-indigo-200">&times;</button>
+                <button onClick={() => setFilters(f => ({ ...f, states: f.states.filter(x => x !== s) }))} className="hover:text-fg-default">&times;</button>
               </span>
             ))}
             {filters.naicsPrefix && (
-              <span className="px-2 py-0.5 bg-indigo-500/20 text-indigo-400 text-xs rounded flex items-center gap-1">
+              <span className="px-2 py-0.5 bg-white/5 text-fg-muted text-xs rounded flex items-center gap-1 border border-white/10">
                 {INDUSTRY_CATEGORIES.find(c => c.naicsPrefixes[0] === filters.naicsPrefix)?.label || filters.naicsPrefix}
-                <button onClick={() => setFilters(f => ({ ...f, naicsPrefix: '' }))} className="hover:text-indigo-200">&times;</button>
+                <button onClick={() => setFilters(f => ({ ...f, naicsPrefix: '' }))} className="hover:text-fg-default">&times;</button>
               </span>
             )}
             {filters.minConfidence > 0 && (
-              <span className="px-2 py-0.5 bg-indigo-500/20 text-indigo-400 text-xs rounded flex items-center gap-1">
+              <span className="px-2 py-0.5 bg-white/5 text-fg-muted text-xs rounded flex items-center gap-1 border border-white/10">
                 {filters.minConfidence}+ confidence
-                <button onClick={() => setFilters(f => ({ ...f, minConfidence: 0 }))} className="hover:text-indigo-200">&times;</button>
+                <button onClick={() => setFilters(f => ({ ...f, minConfidence: 0 }))} className="hover:text-fg-default">&times;</button>
               </span>
             )}
             {filters.minFacilities > 1 && (
-              <span className="px-2 py-0.5 bg-indigo-500/20 text-indigo-400 text-xs rounded flex items-center gap-1">
+              <span className="px-2 py-0.5 bg-white/5 text-fg-muted text-xs rounded flex items-center gap-1 border border-white/10">
                 {filters.minFacilities}+ factories
-                <button onClick={() => setFilters(f => ({ ...f, minFacilities: 1 }))} className="hover:text-indigo-200">&times;</button>
+                <button onClick={() => setFilters(f => ({ ...f, minFacilities: 1 }))} className="hover:text-fg-default">&times;</button>
               </span>
             )}
           </div>
