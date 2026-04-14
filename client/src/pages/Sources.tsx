@@ -31,20 +31,8 @@ const SOURCE_HELP: Record<string, string> = {
   census_cbp: 'Census API can be slow on first load — retry if it times out.',
 };
 
-/** Gradient dot component — used across the app for source identification */
-function SourceDot({ sourceKey, size = 'sm' }: { sourceKey: string; size?: 'sm' | 'md' }) {
-  const source = DATA_SOURCES[sourceKey as keyof typeof DATA_SOURCES];
-  if (!source) return null;
-  const px = size === 'md' ? 'w-3 h-3' : 'w-2.5 h-2.5';
-  return (
-    <span className="relative group/tip flex-shrink-0">
-      <span className={`${px} rounded-full block`} style={{ background: source.gradient }} />
-      <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 px-2 py-1 text-[10px] text-fg-default bg-bg-elevated border border-border-subtle rounded-md whitespace-nowrap opacity-0 pointer-events-none group-hover/tip:opacity-100 transition-opacity z-10">{source.name}</span>
-    </span>
-  );
-}
-
-export { SourceDot };
+// SourceDot is now in components/ui/SourceDot.tsx
+import { SourceDot } from '@/components/ui';
 
 export default function Sources() {
   const queryClient = useQueryClient();

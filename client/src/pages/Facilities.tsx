@@ -7,7 +7,7 @@ import { US_STATES } from '@shared/states';
 import { INDUSTRY_CATEGORIES } from '@shared/naics';
 import type { Facility } from '@shared/types';
 import SearchableSelect from '@/components/ui/SearchableSelect';
-import { SourceDot } from './Sources';
+import { SourceDot } from '@/components/ui';
 
 export default function Facilities() {
   const navigate = useNavigate();
