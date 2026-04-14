@@ -213,8 +213,8 @@ function SourceGroup({ title, sources, data, isLoading, isPipelineRunning, pipel
                 </div>
               </div>
 
-              {/* Record count only — no timestamp on main card */}
-              <div className="mt-2 text-xs text-fg-soft">
+              {/* Record count */}
+              <div className="mt-2 text-xs text-fg-muted">
                 {isLoading ? '...' : `${recordCount.toLocaleString()} records`}
               </div>
 

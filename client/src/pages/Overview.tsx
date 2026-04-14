@@ -6,7 +6,7 @@ import { DATA_SOURCES } from '@shared/types';
 import { US_STATES } from '@shared/states';
 import {
   Database, Factory, Building2, GitCompare, ArrowRight,
-  ChevronDown, ChevronUp, CheckCircle2, Loader2, Download,
+  ChevronDown, ChevronUp, CheckCircle2, Loader2, UserCircle,
   LayoutDashboard, MapPin, Boxes, BarChart3,
 } from 'lucide-react';
 
@@ -142,7 +142,7 @@ function DashboardTab() {
             return (
               <div key={source.key} onClick={() => navigate('/sources')} className={`group p-4 cursor-pointer bg-white/[0.02] backdrop-blur-sm rounded-xl hover:bg-white/[0.05] hover:border-white/10 transition-all duration-200 ${isSyncing ? 'border border-emerald-500/20' : 'border border-white/5'}`}>
                 <div className="flex items-center gap-3 mb-2">
-                  <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: source.color }} />
+                  <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: source.gradient }} />
                   <span className="text-sm font-medium text-fg-default">{source.name}</span>
                 </div>
                 <p className="text-xs text-fg-soft line-clamp-2">{source.description}</p>
@@ -166,8 +166,8 @@ function DashboardTab() {
                       </span>
                     ) : (
                       <span className="relative group/tip">
-                        <Download className="w-4 h-4 text-amber-400" />
-                        <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 px-2 py-1 text-[10px] text-fg-default bg-bg-elevated border border-border-subtle rounded-md whitespace-nowrap opacity-0 pointer-events-none group-hover/tip:opacity-100 transition-opacity z-10">Update Ready</span>
+                        <UserCircle className="w-4 h-4 text-fg-soft" />
+                        <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 px-2 py-1 text-[10px] text-fg-default bg-bg-elevated border border-border-subtle rounded-md whitespace-nowrap opacity-0 pointer-events-none group-hover/tip:opacity-100 transition-opacity z-10">Requires human action</span>
                       </span>
                     )}
                   </div>
