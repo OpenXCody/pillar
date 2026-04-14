@@ -15,6 +15,8 @@ import { fetchNhtsa } from './fetch/nhtsaConnector.js';
 import { fetchSamGov } from './fetch/samConnector.js';
 import { fetchSec } from './fetch/secConnector.js';
 import { fetchCensusCbp } from './fetch/censusCbpConnector.js';
+import { fetchOsha } from './fetch/oshaConnector.js';
+import { fetchFsis } from './fetch/fsisConnector.js';
 import { runMatching } from './match/matcher.js';
 import { runMerge } from './merge/merger.js';
 import type { DataSource } from '@shared/types.js';
@@ -122,6 +124,14 @@ export async function runPipeline(source: DataSource): Promise<PipelineResult> {
       const cbpResult = await fetchCensusCbp(run.id);
       totalFetched = cbpResult.totalFetched;
       inserted = cbpResult.inserted;
+    } else if (source === 'osha') {
+      const oshaResult = await fetchOsha(run.id);
+      totalFetched = oshaResult.totalFetched;
+      inserted = oshaResult.inserted;
+    } else if (source === 'usda_fsis') {
+      const fsisResult = await fetchFsis(run.id);
+      totalFetched = fsisResult.totalFetched;
+      inserted = fsisResult.inserted;
     } else {
       throw new Error(`Source connector not implemented: ${source}`);
     }
