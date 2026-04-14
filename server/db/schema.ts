@@ -23,6 +23,10 @@ export const exportStatusEnum = pgEnum('export_status', [
   'pending', 'generating', 'completed', 'failed',
 ]);
 
+export const companyStatusEnum = pgEnum('company_status', [
+  'unverified', 'verified', 'rejected',
+]);
+
 // ─── Source Runs ─────────────────────────────────────────────────────
 
 export const sourceRuns = pgTable('source_runs', {
@@ -121,12 +125,14 @@ export const companies = pgTable('companies', {
   dunsNumber: text('duns_number'),
   sector: text('sector'),
   naicsCodes: text('naics_codes'),
+  status: companyStatusEnum('status').default('unverified').notNull(),
   facilityCount: integer('facility_count').default(0).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 }, (table) => ({
   nameIdx: uniqueIndex('companies_name_idx').on(table.name),
   dunsIdx: index('companies_duns_idx').on(table.dunsNumber),
+  statusIdx: index('companies_status_idx').on(table.status),
 }));
 
 // ─── Facilities (Golden Records) ─────────────────────────────────────

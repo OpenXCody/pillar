@@ -27,9 +27,10 @@ export const statsApi = {
 };
 
 export const companiesApi = {
-  list: (params: { search?: string; cursor?: string; limit?: number }) =>
+  list: (params: { search?: string; status?: string; cursor?: string; limit?: number }) =>
     apiFetch<import('@shared/types').PaginatedResponse<import('@shared/types').Company>>(`/companies${buildQuery(params)}`),
   get: (id: string) => apiFetch<import('@shared/types').CompanyDetail>(`/companies/${id}`),
+  stats: () => apiFetch<{ unverified: number; verified: number; rejected: number }>('/companies/stats'),
 };
 
 export const facilitiesApi = {

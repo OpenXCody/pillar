@@ -44,6 +44,8 @@ export const DATA_SOURCES: Record<DataSource, SourceInfo> = {
   },
 };
 
+export type CompanyStatus = 'unverified' | 'verified' | 'rejected';
+
 export interface Company {
   id: string;
   name: string;
@@ -51,6 +53,7 @@ export interface Company {
   dunsNumber: string | null;
   sector: string | null;
   naicsCodes: string | null;
+  status: CompanyStatus;
   facilityCount: number;
   createdAt: string;
   updatedAt: string;

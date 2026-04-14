@@ -327,10 +327,12 @@ async function mergeUnmatchedRecords(result: MergeResult): Promise<void> {
     console.log(`[Merger] Batch processed ${totalProcessed} unmatched records`);
   }
 
-  // Update company facility counts in one pass
+  // Update company facility counts and auto-verify companies with factory ties
   if (companyIdCache.size > 0) {
     await db.execute(sql`
-      UPDATE companies SET facility_count = sub.cnt
+      UPDATE companies SET
+        facility_count = sub.cnt,
+        status = CASE WHEN sub.cnt > 0 THEN 'verified'::company_status ELSE status END
       FROM (SELECT company_id, count(*) as cnt FROM facilities WHERE company_id IS NOT NULL GROUP BY company_id) sub
       WHERE companies.id = sub.company_id
     `);
