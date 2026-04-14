@@ -80,4 +80,5 @@ export const pipelineApi = {
 
 export const statesApi = {
   detail: (code: string) => apiFetch<import('@shared/types').StateDetail>(`/states/${code}`),
+  cityDetail: (stateCode: string, city: string) => apiFetch<import('@shared/types').CityDetail>(`/states/${stateCode}/cities/${encodeURIComponent(city)}`),
 };

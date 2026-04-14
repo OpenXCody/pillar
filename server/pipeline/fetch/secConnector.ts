@@ -20,10 +20,10 @@ const SEC_TICKERS_URL = 'https://www.sec.gov/files/company_tickers.json';
 const SEC_SUBMISSIONS_BASE = 'https://data.sec.gov/submissions';
 const USER_AGENT = 'Pillar-Data-Pipeline/1.0 (contact@o-10.com)';
 
-/** Batch size for concurrent submissions requests (stay under 10 req/s) */
-const CONCURRENT_BATCH = 8;
-/** Delay between batches in ms (100ms * 8 concurrent ~= 10/s max) */
-const BATCH_DELAY_MS = 150;
+/** Batch size for concurrent submissions requests (stay well under 10 req/s) */
+const CONCURRENT_BATCH = 3;
+/** Delay between batches in ms — 3 concurrent + 400ms ≈ 7.5 req/s, safely under SEC limit */
+const BATCH_DELAY_MS = 400;
 
 interface SecTickerEntry {
   cik_str: number;

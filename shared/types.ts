@@ -209,7 +209,7 @@ export interface StateDetail {
   topNaics: { code: string | null; description: string | null; count: number }[];
   topCompanies: { id: string; name: string; count: number }[];
   bySource: Record<string, number>;
-  topCities: { city: string; count: number }[];
+  topCities: { city: string; count: number; companyCount: number }[];
 }
 
 export interface CityDetail {

@@ -7,6 +7,7 @@ import Facilities from './pages/Facilities';
 import CompanyDetail from './pages/CompanyDetail';
 import FacilityDetail from './pages/FacilityDetail';
 import StateDetail from './pages/StateDetail';
+import CityDetail from './pages/CityDetail';
 import Review from './pages/Review';
 import Export from './pages/Export';
 
@@ -21,6 +22,7 @@ export default function App() {
         <Route path="/facilities" element={<Facilities />} />
         <Route path="/facilities/:id" element={<FacilityDetail />} />
         <Route path="/states/:code" element={<StateDetail />} />
+        <Route path="/states/:code/cities/:city" element={<CityDetail />} />
         <Route path="/review" element={<Review />} />
         <Route path="/export" element={<Export />} />
       </Route>

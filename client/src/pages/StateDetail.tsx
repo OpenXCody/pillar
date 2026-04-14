@@ -156,7 +156,7 @@ export default function StateDetail() {
                 return (
                   <div
                     key={city.city}
-                    onClick={() => navigate(`/facilities?state=${state.code}&search=${encodeURIComponent(city.city)}`)}
+                    onClick={() => navigate(`/states/${state.code}/cities/${encodeURIComponent(city.city)}`)}
                     className="flex items-center gap-3 cursor-pointer hover:bg-white/[0.03] rounded-lg px-1 py-0.5 -mx-1 transition-colors group"
                   >
                     <span className="text-xs text-fg-muted w-28 truncate flex-shrink-0 group-hover:text-indigo-400 transition-colors">
