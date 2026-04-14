@@ -142,3 +142,50 @@ companiesRouter.get('/:id', async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch company' });
   }
 });
+
+// PATCH /api/companies/:id — Edit company details
+companiesRouter.patch('/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updates = req.body;
+
+    const [existing] = await db.select().from(companies).where(eq(companies.id, id));
+    if (!existing) return res.status(404).json({ error: 'Company not found' });
+
+    const allowedFields: Record<string, keyof typeof companies.$inferInsert> = {
+      name: 'name',
+      sector: 'sector',
+      status: 'status',
+    };
+
+    const setValues: Record<string, unknown> = { updatedAt: new Date() };
+    const fieldsUpdated: string[] = [];
+
+    for (const [key, col] of Object.entries(allowedFields)) {
+      if (updates[key] !== undefined && updates[key] !== (existing as Record<string, unknown>)[col || key]) {
+        setValues[col || key] = updates[key];
+        fieldsUpdated.push(key);
+      }
+    }
+
+    if (fieldsUpdated.length === 0) {
+      return res.json({ company: existing, fieldsUpdated: [] });
+    }
+
+    // If name changed, update company_name on all linked facilities
+    if (fieldsUpdated.includes('name')) {
+      await db.execute(sql`
+        UPDATE facilities SET company_name = ${updates.name}, updated_at = NOW()
+        WHERE company_id = ${id}::uuid
+      `);
+    }
+
+    await db.update(companies).set(setValues).where(eq(companies.id, id));
+
+    const [updated] = await db.select().from(companies).where(eq(companies.id, id));
+    res.json({ company: updated, fieldsUpdated });
+  } catch (err) {
+    console.error('Error updating company:', err);
+    res.status(500).json({ error: 'Failed to update company' });
+  }
+});

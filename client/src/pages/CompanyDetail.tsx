@@ -1,13 +1,14 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { companiesApi } from '@/lib/api';
 import { DATA_SOURCES } from '@shared/types';
 import type { Facility } from '@shared/types';
-import { getCategoryLabel } from '@shared/naics';
+import { getCategoryLabel, INDUSTRY_CATEGORIES } from '@shared/naics';
 import {
   ArrowLeft, Building2, Factory, MapPin, Hash, Database,
   ChevronRight, ChevronDown, ChevronUp, ShieldCheck, AlertCircle, Ban,
+  Pencil, Save, X,
 } from 'lucide-react';
 
 const INITIAL_STATES_SHOWN = 8;
@@ -19,17 +20,61 @@ const STATUS_CONFIG = {
   rejected: { label: 'Rejected', color: 'text-red-400', bg: 'bg-red-500/10', border: 'border-red-500/20', icon: Ban },
 } as const;
 
+interface EditState {
+  name: string;
+  sector: string;
+  status: string;
+}
+
 export default function CompanyDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [showAllStates, setShowAllStates] = useState(false);
   const [showAllFacilities, setShowAllFacilities] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editState, setEditState] = useState<EditState | null>(null);
 
   const { data: company, isLoading } = useQuery({
     queryKey: ['company', id],
     queryFn: () => companiesApi.get(id!),
     enabled: !!id,
   });
+
+  const updateMutation = useMutation({
+    mutationFn: (data: Partial<EditState>) => companiesApi.update(id!, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['company', id] });
+      queryClient.invalidateQueries({ queryKey: ['companies'] });
+      setIsEditing(false);
+      setEditState(null);
+    },
+  });
+
+  function startEditing() {
+    if (!company) return;
+    setEditState({
+      name: company.name,
+      sector: company.sector || '',
+      status: company.status || 'unverified',
+    });
+    setIsEditing(true);
+  }
+
+  function cancelEditing() {
+    setIsEditing(false);
+    setEditState(null);
+  }
+
+  function saveEdits() {
+    if (!editState || !company) return;
+    const changes: Record<string, string> = {};
+    if (editState.name !== company.name) changes.name = editState.name;
+    if (editState.sector !== (company.sector || '')) changes.sector = editState.sector;
+    if (editState.status !== (company.status || 'unverified')) changes.status = editState.status;
+    if (Object.keys(changes).length === 0) { cancelEditing(); return; }
+    updateMutation.mutate(changes);
+  }
 
   if (isLoading) {
     return <div className="text-sm text-fg-soft">Loading...</div>;
@@ -61,13 +106,39 @@ export default function CompanyDetail() {
 
   return (
     <div className="space-y-6 max-w-3xl">
-      {/* Back button */}
-      <button
-        onClick={() => navigate(-1)}
-        className="flex items-center gap-2 text-sm text-fg-muted hover:text-fg-default transition-colors"
-      >
-        <ArrowLeft className="w-4 h-4" /> Back
-      </button>
+      {/* Top bar: Back + Edit */}
+      <div className="flex items-center justify-between">
+        <button
+          onClick={() => navigate(-1)}
+          className="flex items-center gap-2 text-sm text-fg-muted hover:text-fg-default transition-colors"
+        >
+          <ArrowLeft className="w-4 h-4" /> Back
+        </button>
+        {!isEditing ? (
+          <button
+            onClick={startEditing}
+            className="flex items-center gap-1.5 text-sm text-fg-muted hover:text-fg-default transition-colors"
+          >
+            <Pencil className="w-3.5 h-3.5" /> Edit
+          </button>
+        ) : (
+          <div className="flex items-center gap-2">
+            <button
+              onClick={cancelEditing}
+              className="flex items-center gap-1 px-2.5 py-1 text-xs text-fg-muted hover:text-fg-default transition-colors"
+            >
+              <X className="w-3 h-3" /> Cancel
+            </button>
+            <button
+              onClick={saveEdits}
+              disabled={updateMutation.isPending}
+              className="flex items-center gap-1 px-3 py-1 bg-indigo-500 hover:bg-indigo-600 text-white text-xs font-medium rounded-lg transition-colors disabled:opacity-50"
+            >
+              <Save className="w-3 h-3" /> Save
+            </button>
+          </div>
+        )}
+      </div>
 
       {/* Header */}
       <div>
@@ -76,27 +147,70 @@ export default function CompanyDetail() {
             <Building2 className="w-5 h-5 text-amber-500" />
           </div>
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
-              <h2 className="text-xl font-semibold text-fg-default">{company.name}</h2>
-              <span className="relative group/tip flex-shrink-0">
-                <StatusIcon className={`w-4 h-4 ${statusCfg.color}`} />
-                <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 px-2 py-1 text-[10px] text-fg-default bg-bg-elevated border border-border-subtle rounded-md whitespace-nowrap opacity-0 pointer-events-none group-hover/tip:opacity-100 transition-opacity z-10">{statusCfg.label}</span>
-              </span>
-            </div>
-            <div className="flex items-center gap-3 mt-1 flex-wrap">
-              <span className="flex items-center gap-1 text-xs text-fg-muted">
-                <Factory className="w-3 h-3 text-sky-400" />
-                {company.facilityCount} {company.facilityCount === 1 ? 'factory' : 'factories'}
-              </span>
-              {company.sector && (
-                <span className="text-xs text-fg-soft">{company.sector}</span>
-              )}
-              {tickerInfo && (
-                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-indigo-500/10 border border-indigo-500/20 text-[10px] font-mono font-medium text-indigo-400">
-                  {tickerInfo.exchange}:{tickerInfo.ticker}
+            {isEditing && editState ? (
+              <div className="space-y-2">
+                <input
+                  value={editState.name}
+                  onChange={e => setEditState(s => s ? { ...s, name: e.target.value } : null)}
+                  className="text-xl font-semibold text-fg-default bg-white/[0.03] border border-white/10 rounded-lg px-3 py-1.5 w-full focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/30 transition-colors outline-none"
+                  placeholder="Company name"
+                />
+                <div className="flex items-center gap-2">
+                  <select
+                    value={editState.sector}
+                    onChange={e => setEditState(s => s ? { ...s, sector: e.target.value } : null)}
+                    className="text-sm text-fg-default bg-white/[0.03] border border-white/10 rounded-lg px-3 py-1.5 flex-1 outline-none"
+                    style={{ colorScheme: 'dark' }}
+                  >
+                    <option value="">Select category...</option>
+                    {INDUSTRY_CATEGORIES.map(c => (
+                      <option key={c.key} value={c.label}>{c.label}</option>
+                    ))}
+                    <option value="Manufacturing">Manufacturing (General)</option>
+                    {/* Keep current sector value if it doesn't match a category */}
+                    {editState.sector && !INDUSTRY_CATEGORIES.some(c => c.label === editState.sector) && editState.sector !== 'Manufacturing' && (
+                      <option value={editState.sector}>{editState.sector} (current)</option>
+                    )}
+                  </select>
+                  <select
+                    value={editState.status}
+                    onChange={e => setEditState(s => s ? { ...s, status: e.target.value } : null)}
+                    className="text-sm text-fg-default bg-white/[0.03] border border-white/10 rounded-lg px-3 py-1.5 outline-none"
+                    style={{ colorScheme: 'dark' }}
+                  >
+                    <option value="verified">Verified</option>
+                    <option value="unverified">Needs Review</option>
+                    <option value="rejected">Rejected</option>
+                  </select>
+                </div>
+              </div>
+            ) : (
+              <>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h2 className="text-xl font-semibold text-fg-default">{company.name}</h2>
+                  <span className="relative group/tip flex-shrink-0">
+                    <StatusIcon className={`w-4 h-4 ${statusCfg.color}`} />
+                    <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 px-2 py-1 text-[10px] text-fg-default bg-bg-elevated border border-border-subtle rounded-md whitespace-nowrap opacity-0 pointer-events-none group-hover/tip:opacity-100 transition-opacity z-10">{statusCfg.label}</span>
+                  </span>
+                </div>
+              </>
+            )}
+            {!isEditing && (
+              <div className="flex items-center gap-3 mt-1 flex-wrap">
+                <span className="flex items-center gap-1 text-xs text-fg-muted">
+                  <Factory className="w-3 h-3 text-sky-400" />
+                  {company.facilityCount} {company.facilityCount === 1 ? 'factory' : 'factories'}
                 </span>
-              )}
-            </div>
+                {company.sector && (
+                  <span className="text-xs text-fg-soft">{company.sector}</span>
+                )}
+                {tickerInfo && (
+                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-indigo-500/10 border border-indigo-500/20 text-[10px] font-mono font-medium text-indigo-400">
+                    {tickerInfo.exchange}:{tickerInfo.ticker}
+                  </span>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>

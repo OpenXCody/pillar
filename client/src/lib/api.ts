@@ -43,6 +43,11 @@ export const companiesApi = {
   list: (params: { search?: string; status?: string; cursor?: string; limit?: number }) =>
     apiFetch<import('@shared/types').PaginatedResponse<import('@shared/types').Company>>(`/companies${buildQuery(params)}`),
   get: (id: string) => apiFetch<import('@shared/types').CompanyDetail>(`/companies/${id}`),
+  update: (id: string, data: { name?: string; sector?: string; status?: string }) =>
+    apiFetch<{ company: import('@shared/types').Company; fieldsUpdated: string[] }>(`/companies/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    }),
   stats: () => apiFetch<{ unverified: number; verified: number; rejected: number }>('/companies/stats'),
 };
 
