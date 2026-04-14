@@ -247,7 +247,7 @@ export default function Export() {
         </div>
 
         {exportType === 'factory' ? (
-          <div className="grid grid-cols-3 gap-4 mb-5">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-5">
             <div className="bg-bg-inset rounded-lg p-3 text-center">
               <Factory className="w-4 h-4 text-fg-soft mx-auto mb-1" />
               <div className="text-lg font-semibold text-fg-default">

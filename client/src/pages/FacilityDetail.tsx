@@ -303,7 +303,7 @@ export default function FacilityDetail() {
                 className="w-full text-sm text-fg-default bg-white/[0.03] border border-white/10 rounded-lg px-3 py-1.5 focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/30 transition-colors"
                 style={{ outline: 'none' }}
               />
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                 <input
                   type="text"
                   value={editState!.city}

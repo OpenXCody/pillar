@@ -216,7 +216,7 @@ export default function CompanyDetail() {
       </div>
 
       {/* Summary cards row */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div className="bg-white/[0.02] backdrop-blur-sm border border-white/5 rounded-xl p-3 text-center">
           <p className="text-lg font-semibold text-fg-default">{company.facilities.length}</p>
           <p className="text-[10px] text-fg-soft mt-0.5">Linked Factories</p>

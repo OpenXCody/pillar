@@ -275,7 +275,7 @@ export default function Review() {
                     )}
 
                     {/* Side-by-side comparison */}
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <RecordCard record={a} label="Record A" />
                       <RecordCard record={b} label="Record B" />
                     </div>
