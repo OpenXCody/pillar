@@ -111,6 +111,11 @@ export const COMPANY_RULES: CompanyRule[] = [
   { patterns: [/\bBECTON[\s,]*DICKINSON\b/i, /\bBD\b/i], canonical: 'BD' },
 
   // Energy & Refining
+  { patterns: [/\bHILCORP\b/i], canonical: 'Hilcorp' },
+  { patterns: [/\bEOG\s+RESOURCES\b/i, /\bEOG\b/i], canonical: 'EOG Resources' },
+  { patterns: [/\bXTO\s+ENERGY\b/i, /\bXTO\b/i], canonical: 'XTO Energy' },
+  { patterns: [/\bARCHROCK\b/i], canonical: 'Archrock' },
+  { patterns: [/\bEXTERRAN\b/i], canonical: 'Exterran' },
   { patterns: [/\bEXXON\s*MOBIL\b/i, /\bEXXON\b/i, /\bMOBIL\b/i], canonical: 'ExxonMobil' },
   { patterns: [/\bCHEVRON\s+CORP/i, /\bCHEVRON\b/i], canonical: 'Chevron' },
   { patterns: [/\bVALERO\b/i], canonical: 'Valero' },
@@ -584,7 +589,7 @@ export function normalizeCompanyName(rawName: string): string | null {
 export function cleanCompanyName(name: string): string | null {
   if (!name) return null;
   let cleaned = name
-    .replace(/,?\s*(INC\.?|INCORPORATED|LLC|L\.L\.C\.?|LTD\.?|LIMITED|CORP\.?|CORPORATION|CO\.?|COMPANY|L\.?P\.?|GROUP|HOLDINGS?)$/gi, '')
+    .replace(/,?\s+\b(INC\.?|INCORPORATED|LLC|L\.L\.C\.?|LTD\.?|LIMITED|CORP\.?|CORPORATION|CO\.?|COMPANY|L\.?P\.?|GROUP|HOLDINGS?)$/gi, '')
     .replace(/^THE\s+/i, '')
     .replace(/\s+/g, ' ')
     .trim();
@@ -594,7 +599,7 @@ export function cleanCompanyName(name: string): string | null {
 
 function toTitleCase(str: string): string {
   const lowercaseWords = new Set(['a', 'an', 'the', 'and', 'but', 'or', 'for', 'nor', 'on', 'at', 'to', 'by', 'of']);
-  const uppercaseWords = new Set(['USA', 'US', 'UK', 'LLC', 'LLP', 'IBM', 'GE', 'GM', 'HP', 'IT', 'AI', 'ABB', 'PPG', 'ADM', 'BMX', 'BMS', 'BD']);
+  const uppercaseWords = new Set(['USA', 'US', 'UK', 'LLC', 'LLP', 'IBM', 'GE', 'GM', 'HP', 'IT', 'AI', 'ABB', 'PPG', 'ADM', 'BMX', 'BMS', 'BD', 'EOG', 'XTO', 'BHP', 'FMC', 'RPM', 'SPX', 'SKF', 'USG', 'CRH', 'BRP', 'JBS', 'GSK', 'RTX']);
   return str
     .toLowerCase()
     .split(' ')
@@ -624,20 +629,66 @@ function hasCorporateStructure(name: string): boolean {
   return CORPORATE_SUFFIXES.test(name);
 }
 
+/**
+ * Detect equipment/model patterns on the right side of a separator.
+ * If the text after " - " looks like equipment (model numbers, HP ratings,
+ * serial numbers), the left side is the operator, not the equipment brand.
+ */
+const EQUIPMENT_PATTERN = /\b(\d{3,4}\s*HP|G\d{3,4}|C-?\d{1,2}\b|3\d{3}|D-?\d{2}|NO\d{3,4}|SN\s*[A-Z0-9]|UNIT\s*#|PORTABLE|GENERAT|COMPRESSOR|ENGINE\b|FLEET\b|\d+\s*EA\.?\s)/i;
+
 export function extractCompanyFromFacilityName(facilityName: string): string | null {
   if (!facilityName) return null;
 
   // Skip government/educational facilities
   if (NON_COMPANY_INDICATORS.test(facilityName)) return null;
 
-  // 1. Direct rule match against the full facility name
+  // 1. SEPARATOR CHECK FIRST — prevents equipment brand misattribution.
+  //    "ARCHROCK - CATERPILLAR G3516" → Archrock (not Caterpillar)
+  //    "CATERPILLAR INC - MAPLETON" → Caterpillar (left side IS the company)
+  const separators = [' - ', ' – ', ' — '];
+  for (const sep of separators) {
+    const idx = facilityName.indexOf(sep);
+    if (idx > 0) {
+      const leftSide = facilityName.substring(0, idx).trim();
+      const rightSide = facilityName.substring(idx + sep.length).trim();
+
+      // If the right side has equipment/model patterns, the LEFT side is the real operator
+      if (EQUIPMENT_PATTERN.test(rightSide)) {
+        const normalized = normalizeCompanyName(leftSide);
+        if (normalized && !isBlockedCompanyName(normalized)) return normalized;
+        const cleaned = cleanCompanyName(leftSide);
+        if (cleaned && !isBlockedCompanyName(cleaned)) return cleaned;
+      }
+
+      // Otherwise, use the left side as the company (normal separator behavior)
+      const normalized = normalizeCompanyName(leftSide);
+      if (normalized !== leftSide && normalized) return normalized;
+      const cleaned = cleanCompanyName(leftSide);
+      if (cleaned && !isBlockedCompanyName(cleaned)) return cleaned;
+    }
+  }
+
+  // Also check " / " and ", " separators (less likely to be equipment)
+  for (const sep of [' / ', ', ']) {
+    const idx = facilityName.indexOf(sep);
+    if (idx > 0) {
+      const potentialCompany = facilityName.substring(0, idx).trim();
+      const normalized = normalizeCompanyName(potentialCompany);
+      if (normalized !== potentialCompany && normalized) return normalized;
+      const cleaned = cleanCompanyName(potentialCompany);
+      if (cleaned && !isBlockedCompanyName(cleaned)) return cleaned;
+    }
+  }
+
+  // 2. Direct rule match against the full facility name
+  //    (now AFTER separator check so "ARCHROCK - CATERPILLAR" won't match Caterpillar)
   for (const rule of COMPANY_RULES) {
     for (const pattern of rule.patterns) {
       if (pattern.test(facilityName)) return rule.canonical;
     }
   }
 
-  // 2. "DIVISION OF [COMPANY]" / "SUBSIDIARY OF [COMPANY]" / "A [COMPANY] COMPANY"
+  // 3. "DIVISION OF [COMPANY]" / "SUBSIDIARY OF [COMPANY]"
   const divisionOf = facilityName.match(/\b(?:DIVISION|SUBSIDIARY|UNIT|BRANCH|DEPT)\s+OF\s+(.+)$/i);
   if (divisionOf) {
     const parent = divisionOf[1].trim();
@@ -648,7 +699,6 @@ export function extractCompanyFromFacilityName(facilityName: string): string | n
 
   const aCompanyOf = facilityName.match(/^(.+?)\s+(?:A\s+)?(?:DIVISION|SUBSIDIARY)\s+OF/i);
   if (aCompanyOf) {
-    // The part after "OF" is the parent, but let's also check what comes after
     const afterOf = facilityName.replace(aCompanyOf[0], '').trim();
     if (afterOf) {
       const normalized = normalizeCompanyName(afterOf);
@@ -657,26 +707,13 @@ export function extractCompanyFromFacilityName(facilityName: string): string | n
     }
   }
 
-  // 3. "DBA [NAME]" pattern — use the DBA as the company
+  // 4. "DBA [NAME]" pattern — use the DBA as the company
   const dbaMatch = facilityName.match(/\bDBA\s+(.+)$/i);
   if (dbaMatch) {
     const dbaName = dbaMatch[1].trim();
     const normalized = normalizeCompanyName(dbaName);
     if (normalized !== cleanCompanyName(dbaName)) return normalized;
-    // DBA name with corporate suffix is a valid company
     if (hasCorporateStructure(dbaName)) return cleanCompanyName(dbaName);
-  }
-
-  // 4. Try splitting on various separator patterns and checking the left side
-  const separators = [' - ', ' – ', ' — ', ' / ', ', '];
-  for (const sep of separators) {
-    const idx = facilityName.indexOf(sep);
-    if (idx > 0) {
-      const potentialCompany = facilityName.substring(0, idx).trim();
-      const normalized = normalizeCompanyName(potentialCompany);
-      if (normalized !== potentialCompany) return normalized;
-      return cleanCompanyName(potentialCompany);
-    }
   }
 
   // 5. Colon separator: "COMPANY:FACILITY" or "COMPANY: FACILITY"
