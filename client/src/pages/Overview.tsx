@@ -110,10 +110,10 @@ export default function Overview() {
         <div>
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-medium text-fg-muted">
-              {showAllStates ? 'All States' : 'Top States'} by Factory Count
+              {showAllStates ? 'All States & Territories' : 'Top States'} by Factory Count
             </h3>
             <span className="text-xs text-fg-soft">
-              {stats.byState.length} states
+              {stats.byState.length} regions
             </span>
           </div>
           <div className="bg-white/[0.02] backdrop-blur-sm border border-white/5 rounded-xl p-4 space-y-2.5">
@@ -147,7 +147,7 @@ export default function Overview() {
                 {showAllStates ? (
                   <>Show Less <ChevronUp className="w-3 h-3" /></>
                 ) : (
-                  <>Show All {stats.byState.length} States <ChevronDown className="w-3 h-3" /></>
+                  <>Show All {stats.byState.length} Regions <ChevronDown className="w-3 h-3" /></>
                 )}
               </button>
             )}
@@ -158,12 +158,12 @@ export default function Overview() {
   );
 }
 
-function KpiCard({ icon, label, value, onClick, accent }: {
+function KpiCard({ icon, label, value, onClick }: {
   icon: React.ReactNode;
   label: string;
   value: string;
   onClick?: () => void;
-  accent: string;
+  accent?: string;
 }) {
   return (
     <div

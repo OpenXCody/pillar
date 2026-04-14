@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { reviewApi } from '@/lib/api';
 import { DATA_SOURCES } from '@shared/types';
-import { GitCompare, Check, X, SkipForward, MapPin, Hash, ChevronDown, ChevronUp } from 'lucide-react';
+import { GitCompare, Check, X, MapPin, Hash, ChevronDown, ChevronUp } from 'lucide-react';
 
 type TabStatus = 'pending' | 'confirmed' | 'rejected';
 
@@ -53,7 +53,9 @@ export default function Review() {
   });
 
   // Accumulate pages for infinite scroll
-  const displayItems = cursor ? [...allItems, ...(data?.data ?? [])] : (data?.data ?? []);
+  const displayItems: ReviewCandidate[] = cursor
+    ? [...allItems, ...((data?.data as ReviewCandidate[]) ?? [])]
+    : ((data?.data as ReviewCandidate[]) ?? []);
 
   const confirmMutation = useMutation({
     mutationFn: (id: string) => reviewApi.confirm(id),

@@ -7,6 +7,7 @@ import { US_STATES } from '@shared/states';
 import { MANUFACTURING_SUBSECTORS } from '@shared/naics';
 import { DATA_SOURCES } from '@shared/types';
 import type { Facility } from '@shared/types';
+import SearchableSelect from '@/components/ui/SearchableSelect';
 
 export default function Facilities() {
   const navigate = useNavigate();
@@ -71,10 +72,6 @@ export default function Facilities() {
     }
   }, [data, displayItems]);
 
-  // Get the human-readable state name for display
-  const stateObj = stateFilter ? US_STATES.find(s => s.code === stateFilter) : null;
-  const naicsObj = naicsFilter ? MANUFACTURING_SUBSECTORS.find(s => s.code === naicsFilter) : null;
-
   return (
     <div className="space-y-5">
       <div>
@@ -101,48 +98,28 @@ export default function Facilities() {
           )}
         </div>
 
-        <select
+        <SearchableSelect
+          options={US_STATES.map(s => ({ value: s.code, label: s.name }))}
           value={stateFilter}
-          onChange={e => setFilter('state', e.target.value)}
-          className="bg-bg-surface border border-border-subtle rounded-lg px-3 py-2.5 text-sm text-fg-default appearance-none cursor-pointer"
-        >
-          <option value="">All States</option>
-          {US_STATES.map(s => (
-            <option key={s.code} value={s.code}>{s.name}</option>
-          ))}
-        </select>
+          onChange={v => setFilter('state', v)}
+          placeholder="Filter by state..."
+          icon={<MapPin className="w-3.5 h-3.5 text-indigo-400 flex-shrink-0" />}
+          accentColor="indigo"
+        />
 
-        <select
+        <SearchableSelect
+          options={MANUFACTURING_SUBSECTORS.map(s => ({ value: s.code, label: s.title, subtitle: s.code }))}
           value={naicsFilter}
-          onChange={e => setFilter('naics', e.target.value)}
-          className="bg-bg-surface border border-border-subtle rounded-lg px-3 py-2.5 text-sm text-fg-default appearance-none cursor-pointer"
-        >
-          <option value="">All Industries</option>
-          {MANUFACTURING_SUBSECTORS.map(s => (
-            <option key={s.code} value={s.code}>{s.code} - {s.title}</option>
-          ))}
-        </select>
+          onChange={v => setFilter('naics', v)}
+          placeholder="Filter by industry..."
+          icon={<Hash className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />}
+          accentColor="emerald"
+        />
       </div>
 
-      {/* Active filter chips */}
-      {activeFilters > 0 && (
+      {/* Company filter chip + clear all */}
+      {(companyFilter || activeFilters > 1) && (
         <div className="flex items-center gap-2 flex-wrap">
-          {stateFilter && stateObj && (
-            <FilterChip
-              icon={<MapPin className="w-3 h-3 text-indigo-400" />}
-              label={stateObj.name}
-              color="indigo"
-              onRemove={() => setFilter('state', '')}
-            />
-          )}
-          {naicsFilter && naicsObj && (
-            <FilterChip
-              icon={<Hash className="w-3 h-3 text-emerald-400" />}
-              label={`${naicsObj.code} - ${naicsObj.title}`}
-              color="emerald"
-              onRemove={() => setFilter('naics', '')}
-            />
-          )}
           {companyFilter && (
             <FilterChip
               icon={<Building2 className="w-3 h-3 text-amber-500" />}
@@ -151,12 +128,14 @@ export default function Facilities() {
               onRemove={() => setFilter('company', '')}
             />
           )}
-          <button
-            onClick={clearAllFilters}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-fg-muted hover:text-fg-default transition-colors"
-          >
-            <X className="w-3 h-3" /> Clear all
-          </button>
+          {activeFilters > 1 && (
+            <button
+              onClick={clearAllFilters}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-fg-muted hover:text-fg-default transition-colors"
+            >
+              <X className="w-3 h-3" /> Clear all
+            </button>
+          )}
         </div>
       )}
 

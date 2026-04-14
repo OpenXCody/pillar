@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { companiesApi } from '@/lib/api';
-import { Search, Building2, Factory, X, ShieldCheck, AlertCircle, Ban, MapPin } from 'lucide-react';
+import { Search, Building2, Factory, X, ShieldCheck, AlertCircle, Ban } from 'lucide-react';
 import type { CompanyStatus, Company } from '@shared/types';
 
 function formatCount(n: number): string {
