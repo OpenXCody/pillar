@@ -549,9 +549,30 @@ export const COMPANY_RULES: CompanyRule[] = [
   { patterns: [/\bKEYSIGHT\b/i], canonical: 'Keysight' },
 ];
 
-export function normalizeCompanyName(rawName: string): string {
-  if (!rawName || typeof rawName !== 'string') return rawName;
+/**
+ * Values that should never become company names — null/NA variants,
+ * placeholder strings, single characters, all-numeric.
+ */
+const BLOCKED_COMPANY_VALUES = new Set([
+  'na', 'n/a', 'n.a', 'n.a.', 'n a', 'none', 'null', 'unknown', 'tbd',
+  'test', 'temp', 'pending', 'not available', 'not applicable',
+  'unspecified', 'unassigned', 'no name', 'no company', '-', '--', '.',
+  'various', 'other', 'misc', 'general', 'private', 'individual',
+]);
+
+export function isBlockedCompanyName(name: string | null): boolean {
+  if (!name) return true;
+  const trimmed = name.trim();
+  if (trimmed.length <= 1) return true;
+  if (BLOCKED_COMPANY_VALUES.has(trimmed.toLowerCase())) return true;
+  if (/^[\d\s.,-]+$/.test(trimmed)) return true;
+  return false;
+}
+
+export function normalizeCompanyName(rawName: string): string | null {
+  if (!rawName || typeof rawName !== 'string') return null;
   const trimmed = rawName.trim();
+  if (isBlockedCompanyName(trimmed)) return null;
   for (const rule of COMPANY_RULES) {
     for (const pattern of rule.patterns) {
       if (pattern.test(trimmed)) return rule.canonical;
@@ -560,13 +581,14 @@ export function normalizeCompanyName(rawName: string): string {
   return cleanCompanyName(trimmed);
 }
 
-export function cleanCompanyName(name: string): string {
-  if (!name) return name;
+export function cleanCompanyName(name: string): string | null {
+  if (!name) return null;
   let cleaned = name
     .replace(/,?\s*(INC\.?|INCORPORATED|LLC|L\.L\.C\.?|LTD\.?|LIMITED|CORP\.?|CORPORATION|CO\.?|COMPANY|L\.?P\.?|GROUP|HOLDINGS?)$/gi, '')
     .replace(/^THE\s+/i, '')
     .replace(/\s+/g, ' ')
     .trim();
+  if (isBlockedCompanyName(cleaned)) return null;
   return toTitleCase(cleaned);
 }
 

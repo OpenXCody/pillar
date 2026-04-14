@@ -44,10 +44,10 @@ async function main() {
     const cleaned = cleanCompanyName(name);
 
     // Store under both normalized and cleaned forms
-    if (!tickerMap.has(normalized)) {
+    if (normalized && !tickerMap.has(normalized)) {
       tickerMap.set(normalized, { cik, ticker, exchange, rawName: name });
     }
-    if (cleaned !== normalized && !tickerMap.has(cleaned)) {
+    if (cleaned && cleaned !== normalized && !tickerMap.has(cleaned)) {
       tickerMap.set(cleaned, { cik, ticker, exchange, rawName: name });
     }
 
@@ -74,13 +74,13 @@ async function main() {
     // Try normalized
     if (!match) {
       const normalized = normalizeCompanyName(co.name);
-      match = tickerMap.get(normalized);
+      if (normalized) match = tickerMap.get(normalized);
     }
 
     // Try cleaned
     if (!match) {
       const cleaned = cleanCompanyName(co.name);
-      match = tickerMap.get(cleaned);
+      if (cleaned) match = tickerMap.get(cleaned);
     }
 
     // Try uppercase stripped

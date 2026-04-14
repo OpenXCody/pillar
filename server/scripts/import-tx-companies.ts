@@ -55,6 +55,7 @@ async function main() {
   for (const row of rows) {
     if (!row.company_name?.trim()) continue;
     const normalized = normalizeCompanyName(row.company_name.trim());
+    if (!normalized) continue;
     if (!seen.has(normalized)) {
       seen.set(normalized, row);
     } else {

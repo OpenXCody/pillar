@@ -10,6 +10,7 @@ import {
   normalizeCompanyName,
   cleanCompanyName,
   extractCompanyFromFacilityName,
+  isBlockedCompanyName,
 } from '@shared/companyNormalization.js';
 
 export interface NormalizedNames {
@@ -60,18 +61,20 @@ export function resolveCompanyName(
 ): string | null {
   // TRI parent company is the best source
   if (triParentCompany) {
-    return normalizeCompanyName(triParentCompany);
+    const normalized = normalizeCompanyName(triParentCompany);
+    if (normalized && !isBlockedCompanyName(normalized)) return normalized;
   }
 
   // Try to extract from facility name
   if (facilityName) {
     const extracted = extractCompanyFromFacilityName(facilityName);
-    if (extracted) return extracted;
+    if (extracted && !isBlockedCompanyName(extracted)) return extracted;
 
     // Last resort: try normalizing the facility name itself
     // (only works if the facility is named after the company)
     const normalized = normalizeCompanyName(facilityName);
-    if (normalized !== cleanCompanyName(facilityName)) {
+    const cleaned = cleanCompanyName(facilityName);
+    if (normalized && normalized !== cleaned) {
       // The normalizer matched a known company pattern
       return normalized;
     }

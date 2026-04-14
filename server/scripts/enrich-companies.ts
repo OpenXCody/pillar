@@ -50,7 +50,7 @@ function extractCompanyAggressive(facilityName: string | null, parentCompany: st
     const companyPart = facilityName.substring(0, suffixMatch.index + suffixMatch[0].length).trim();
     if (companyPart.length >= 3) {
       const normalized = normalizeCompanyName(companyPart);
-      return normalized;
+      if (normalized) return normalized;
     }
   }
 
@@ -61,7 +61,8 @@ function extractCompanyAggressive(facilityName: string | null, parentCompany: st
     if (idx > 2) {
       const potentialCompany = facilityName.substring(0, idx).trim();
       if (potentialCompany.length >= 3) {
-        return cleanCompanyName(potentialCompany);
+        const cleaned = cleanCompanyName(potentialCompany);
+        if (cleaned) return cleaned;
       }
     }
   }
@@ -71,7 +72,7 @@ function extractCompanyAggressive(facilityName: string | null, parentCompany: st
   if (parenMatch && parenMatch[1].length >= 3) {
     const inner = parenMatch[1].trim();
     const normalized = normalizeCompanyName(inner);
-    return normalized;
+    if (normalized) return normalized;
   }
 
   return null;

@@ -89,6 +89,10 @@ async function importSeedData() {
 
   for (const name of companyNames) {
     const normalized = normalizeCompanyName(name);
+    if (!normalized) {
+      console.log(`  Skipping company with null normalized name: ${name}`);
+      continue;
+    }
     const existing = await db.select().from(companies).where(eq(companies.name, normalized)).limit(1);
 
     if (existing.length > 0) {
@@ -116,7 +120,7 @@ async function importSeedData() {
     if (!row) continue;
 
     const companyId = companyMap.get(row.Company) || null;
-    const companyName = row.Company ? normalizeCompanyName(row.Company) : null;
+    const companyName = row.Company ? normalizeCompanyName(row.Company) ?? row.Company : null;
     const state = normalizeState(row.State);
 
     // Calculate confidence: higher if we have coordinates
