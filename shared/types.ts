@@ -1,4 +1,4 @@
-export type DataSource = 'epa_echo' | 'epa_tri' | 'osha' | 'usda_fsis' | 'faa' | 'nhtsa' | 'sam_gov' | 'sec_edgar' | 'manual';
+export type DataSource = 'epa_echo' | 'epa_tri' | 'osha' | 'usda_fsis' | 'faa' | 'nhtsa' | 'sam_gov' | 'sec_edgar' | 'census_cbp' | 'manual';
 export type RunStatus = 'pending' | 'fetching' | 'normalizing' | 'matching' | 'merging' | 'completed' | 'failed';
 export type MatchStatus = 'pending' | 'confirmed' | 'rejected' | 'auto_matched';
 export type MatchType = 'geo_name' | 'address_exact' | 'frs_id' | 'cross_source';
@@ -59,6 +59,12 @@ export const DATA_SOURCES: Record<DataSource, SourceInfo> = {
     name: 'SEC EDGAR',
     description: 'Publicly traded manufacturers from Securities and Exchange Commission filings',
     color: '#34D399',
+  },
+  census_cbp: {
+    key: 'census_cbp',
+    name: 'Census CBP',
+    description: 'County Business Patterns — manufacturing establishment counts, employment, and payroll by county',
+    color: '#F472B6',
   },
   manual: {
     key: 'manual',

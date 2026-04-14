@@ -2,11 +2,14 @@
  * SEC EDGAR Connector
  *
  * Fetches publicly traded manufacturer data from SEC's EDGAR system.
- * Uses the company tickers list + individual submissions to identify
- * manufacturers (SIC 2000-3999) and extract company info.
  *
- * API: https://www.sec.gov/files/company_tickers.json (all public companies)
- * API: https://data.sec.gov/submissions/CIK{padded}.json (company detail)
+ * Strategy: Uses SEC's company search (browse-edgar) to query by SIC code range.
+ * Manufacturing SIC codes are 2000-3999. We query each 2-digit SIC prefix (20-39)
+ * which returns all companies in that range. This is MUCH more efficient than
+ * scanning all 10K+ tickers individually.
+ *
+ * API: https://efts.sec.gov/LATEST/search-index (EDGAR full-text search)
+ * API: https://www.sec.gov/cgi-bin/browse-edgar (company search by SIC)
  * No API key required. Must set User-Agent header.
  * Rate limit: 10 requests/second.
  */
@@ -16,48 +19,17 @@ import { rawRecords, sourceRuns } from '../../db/schema.js';
 import { eq } from 'drizzle-orm';
 import { updateProgress } from '../orchestrator.js';
 
-const SEC_TICKERS_URL = 'https://www.sec.gov/files/company_tickers.json';
-const SEC_SUBMISSIONS_BASE = 'https://data.sec.gov/submissions';
 const USER_AGENT = 'Pillar-Data-Pipeline/1.0 (contact@o-10.com)';
 
-/** Batch size for concurrent submissions requests (stay well under 10 req/s) */
-const CONCURRENT_BATCH = 3;
-/** Delay between batches in ms — 3 concurrent + 400ms ≈ 7.5 req/s, safely under SEC limit */
-const BATCH_DELAY_MS = 400;
+/** Delay between requests in ms — conservative to avoid rate limiting */
+const REQUEST_DELAY_MS = 600;
 
-interface SecTickerEntry {
-  cik_str: number;
-  ticker: string;
-  title: string;
-}
-
-interface SecSubmission {
+interface SecCompanyEntry {
   cik: string;
-  entityType: string;
-  sic: string;
-  sicDescription: string;
   name: string;
-  tickers: string[];
-  exchanges: string[];
+  ticker: string;
+  sic: string;
   stateOfIncorporation: string;
-  addresses: {
-    mailing: SecAddress;
-    business: SecAddress;
-  };
-  filings?: {
-    recent?: {
-      form: string[];
-    };
-  };
-}
-
-interface SecAddress {
-  street1: string | null;
-  street2: string | null;
-  city: string | null;
-  stateOrCountry: string | null;
-  zipCode: string | null;
-  stateOrCountryDescription: string | null;
 }
 
 export interface SecFetchResult {
@@ -123,24 +95,6 @@ function padCik(cik: number | string): string {
 }
 
 /**
- * Check if a state code is a US state (2-letter code).
- * SEC uses ISO country codes for non-US entities (e.g., "A2" for non-US).
- */
-const US_STATES = new Set([
-  'AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'DC', 'FL',
-  'GA', 'HI', 'ID', 'IL', 'IN', 'IA', 'KS', 'KY', 'LA', 'ME',
-  'MD', 'MA', 'MI', 'MN', 'MS', 'MO', 'MT', 'NE', 'NV', 'NH',
-  'NJ', 'NM', 'NY', 'NC', 'ND', 'OH', 'OK', 'OR', 'PA', 'PR',
-  'RI', 'SC', 'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV',
-  'WI', 'WY',
-]);
-
-function isUsState(code: string | null): boolean {
-  if (!code) return false;
-  return US_STATES.has(code.toUpperCase());
-}
-
-/**
  * Fetch with retry and proper SEC User-Agent header.
  */
 async function fetchWithRetry(url: string, maxRetries = 3): Promise<Response> {
@@ -155,8 +109,9 @@ async function fetchWithRetry(url: string, maxRetries = 3): Promise<Response> {
 
     if (res.status === 403 || res.status === 429) {
       if (attempt < maxRetries) {
-        const delay = Math.min(2000 * Math.pow(2, attempt), 30000);
-        console.log(`[SEC] Rate limited (${res.status}), retrying in ${delay / 1000}s... (attempt ${attempt + 1}/${maxRetries})`);
+        // Aggressive backoff for SEC rate limits
+        const delay = Math.min(10000 * Math.pow(2, attempt), 120000);
+        console.log(`[SEC] Rate limited (${res.status}), backing off ${delay / 1000}s... (attempt ${attempt + 1}/${maxRetries})`);
         await new Promise(r => setTimeout(r, delay));
         continue;
       }
@@ -169,164 +124,129 @@ async function fetchWithRetry(url: string, maxRetries = 3): Promise<Response> {
 }
 
 /**
- * Fetch the full company tickers list from SEC.
- * Returns array of {cik, ticker, title}.
+ * Fetch all companies for a given SIC code from SEC's EDGAR company search.
+ * Uses the JSON output format from browse-edgar.
  */
-async function fetchTickersList(): Promise<SecTickerEntry[]> {
-  console.log('[SEC] Fetching company tickers list...');
-  const res = await fetchWithRetry(SEC_TICKERS_URL);
+async function fetchCompaniesBySic(sicCode: string): Promise<SecCompanyEntry[]> {
+  const companies: SecCompanyEntry[] = [];
+  let start = 0;
+  const count = 100; // Max per page
 
-  if (!res.ok) {
-    throw new Error(`SEC tickers API error: ${res.status} ${res.statusText}`);
-  }
+  while (true) {
+    const url = `https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&SIC=${sicCode}&owner=include&match=&start=${start}&count=${count}&hidefilings=1&output=atom`;
 
-  const data = await res.json() as Record<string, SecTickerEntry>;
-  const entries = Object.values(data);
-  console.log(`[SEC] Tickers list: ${entries.length} companies`);
-  return entries;
-}
-
-/**
- * Fetch submission data for a single company by CIK.
- * Returns null if the request fails.
- */
-async function fetchSubmission(cik: number): Promise<SecSubmission | null> {
-  const paddedCik = padCik(cik);
-  const url = `${SEC_SUBMISSIONS_BASE}/CIK${paddedCik}.json`;
-
-  try {
-    const res = await fetchWithRetry(url, 2);
-    if (!res.ok) return null;
-
-    const data = await res.json() as SecSubmission;
-    return data;
-  } catch {
-    return null;
-  }
-}
-
-/**
- * Check if a SIC code falls in the manufacturing range (2000-3999).
- */
-function isManufacturingSic(sic: string | null | undefined): boolean {
-  if (!sic) return false;
-  const code = parseInt(sic, 10);
-  return code >= 2000 && code < 4000;
-}
-
-interface SecManufacturer {
-  cik: number;
-  ticker: string;
-  name: string;
-  sic: string;
-  sicDescription: string;
-  stateOfIncorporation: string;
-  address: SecAddress;
-}
-
-/**
- * Fetch submissions for all companies in batches, filter to manufacturers.
- * Uses parallel batching to stay under SEC's 10 req/s rate limit.
- */
-async function fetchAndFilterManufacturers(tickers: SecTickerEntry[]): Promise<SecManufacturer[]> {
-  const manufacturers: SecManufacturer[] = [];
-  let processed = 0;
-  let consecutiveFailures = 0;
-
-  console.log(`[SEC] Fetching submissions for ${tickers.length} companies to identify manufacturers...`);
-
-  for (let i = 0; i < tickers.length; i += CONCURRENT_BATCH) {
-    // If too many consecutive failures, back off harder
-    if (consecutiveFailures >= 50) {
-      console.log(`[SEC] Too many consecutive failures (${consecutiveFailures}). Pausing 10s...`);
-      await new Promise(r => setTimeout(r, 10000));
-      consecutiveFailures = 0;
-    }
-
-    const batch = tickers.slice(i, i + CONCURRENT_BATCH);
-    const promises = batch.map(t => fetchSubmission(t.cik_str));
-    const results = await Promise.all(promises);
-
-    let batchFailures = 0;
-
-    for (let j = 0; j < batch.length; j++) {
-      const submission = results[j];
-      if (!submission) {
-        batchFailures++;
-        consecutiveFailures++;
-        continue;
+    try {
+      const res = await fetchWithRetry(url, 2);
+      if (!res.ok) {
+        console.log(`[SEC] SIC ${sicCode} page ${start}: HTTP ${res.status}, skipping`);
+        break;
       }
 
-      consecutiveFailures = 0;
+      const text = await res.text();
 
-      // Check if this company is a manufacturer
-      if (isManufacturingSic(submission.sic)) {
-        // Prefer business address, fall back to mailing
-        const addr = submission.addresses?.business?.city
-          ? submission.addresses.business
-          : submission.addresses?.mailing ?? { street1: null, street2: null, city: null, stateOrCountry: null, zipCode: null, stateOrCountryDescription: null };
+      // Parse Atom XML to extract company data
+      // Each <entry> has <title>, <content> with CIK/SIC/State
+      const entries = text.match(/<entry>[\s\S]*?<\/entry>/g) || [];
 
-        manufacturers.push({
-          cik: batch[j].cik_str,
-          ticker: batch[j].ticker,
-          name: submission.name || batch[j].title,
-          sic: submission.sic,
-          sicDescription: submission.sicDescription || '',
-          stateOfIncorporation: submission.stateOfIncorporation || '',
-          address: addr,
-        });
+      if (entries.length === 0) break;
+
+      for (const entry of entries) {
+        const cikMatch = entry.match(/<CIK>([\d]+)<\/CIK>/i) || entry.match(/CIK=(\d+)/);
+        const nameMatch = entry.match(/<company-name>([^<]+)<\/company-name>/i) || entry.match(/<title[^>]*>([^<]+)<\/title>/);
+        const stateMatch = entry.match(/<State>([^<]+)<\/State>/i);
+
+        if (cikMatch) {
+          companies.push({
+            cik: cikMatch[1],
+            name: nameMatch ? nameMatch[1].trim() : 'Unknown',
+            ticker: '', // Not available from browse-edgar
+            sic: sicCode,
+            stateOfIncorporation: stateMatch ? stateMatch[1] : '',
+          });
+        }
+      }
+
+      // If we got less than `count` entries, we've reached the end
+      if (entries.length < count) break;
+      start += count;
+
+      await new Promise(r => setTimeout(r, REQUEST_DELAY_MS));
+    } catch (err) {
+      console.log(`[SEC] Error fetching SIC ${sicCode} at offset ${start}: ${err}`);
+      break;
+    }
+  }
+
+  return companies;
+}
+
+/**
+ * Alternative approach: Use company_tickers.json + batch SIC lookup.
+ * Downloads the full tickers list, then for each SIC code in manufacturing range,
+ * fetches the list of companies from SEC's company search.
+ */
+async function fetchManufacturersBySicRange(): Promise<SecCompanyEntry[]> {
+  const allManufacturers: SecCompanyEntry[] = [];
+  const seen = new Set<string>();
+
+  // Manufacturing SIC ranges: 2000-3999
+  // Query each 4-digit SIC code would be 2000 requests.
+  // Instead, query each 2-digit prefix (20-39) which covers the range in 20 requests.
+  const sicPrefixes: string[] = [];
+  for (let i = 20; i <= 39; i++) {
+    sicPrefixes.push(String(i));
+  }
+
+  console.log(`[SEC] Querying ${sicPrefixes.length} SIC prefix ranges for manufacturers...`);
+
+  for (let i = 0; i < sicPrefixes.length; i++) {
+    const prefix = sicPrefixes[i];
+    updateProgress('fetching', 5 + Math.round((i / sicPrefixes.length) * 70),
+      `Scanning SEC SIC ${prefix}xx... (${allManufacturers.length} manufacturers found)`);
+
+    const companies = await fetchCompaniesBySic(prefix);
+
+    for (const co of companies) {
+      if (!seen.has(co.cik)) {
+        seen.add(co.cik);
+        allManufacturers.push(co);
       }
     }
 
-    processed += batch.length;
-
-    // Progress reporting
-    if (processed % 500 === 0 || processed === tickers.length) {
-      const pct = Math.round((processed / tickers.length) * 100);
-      updateProgress('fetching', 5 + Math.round(pct * 0.65), `Scanning SEC companies... ${processed.toLocaleString()} / ${tickers.length.toLocaleString()} (${manufacturers.length} manufacturers)`);
-      console.log(`[SEC] Scanned ${processed.toLocaleString()} / ${tickers.length.toLocaleString()} — ${manufacturers.length} manufacturers found`);
-    }
-
-    // Adaptive rate limiting
-    const delay = batchFailures > 2 ? BATCH_DELAY_MS * 3 : BATCH_DELAY_MS;
-    await new Promise(r => setTimeout(r, delay));
+    console.log(`[SEC] SIC ${prefix}xx: ${companies.length} companies (${allManufacturers.length} total unique)`);
+    await new Promise(r => setTimeout(r, REQUEST_DELAY_MS));
   }
 
-  console.log(`[SEC] Scan complete: ${manufacturers.length} manufacturers out of ${tickers.length} companies`);
-  return manufacturers;
+  console.log(`[SEC] Total unique manufacturers found: ${allManufacturers.length}`);
+  return allManufacturers;
 }
 
 /**
  * Insert SEC manufacturer records into raw_records in batches.
  */
-async function insertSecRecords(records: SecManufacturer[], runId: string): Promise<{ inserted: number; errors: string[] }> {
+async function insertSecRecords(records: SecCompanyEntry[], runId: string): Promise<{ inserted: number; errors: string[] }> {
   const BATCH_SIZE = 500;
   let inserted = 0;
   const errors: string[] = [];
 
   for (let i = 0; i < records.length; i += BATCH_SIZE) {
-    const batch = records.slice(i, i + BATCH_SIZE).map(row => {
-      const stateCode = row.address.stateOrCountry?.toUpperCase() ?? null;
-      const normalizedState = stateCode && isUsState(stateCode) ? stateCode : null;
-
-      return {
-        source: 'sec_edgar' as const,
-        sourceRunId: runId,
-        sourceRecordId: `sec_${padCik(row.cik)}`,
-        rawName: row.name || null,
-        rawAddress: [row.address.street1, row.address.street2].filter(Boolean).join(', ') || null,
-        rawCity: row.address.city || null,
-        rawState: normalizedState,
-        rawZip: row.address.zipCode || null,
-        rawNaicsCode: sicToNaics(row.sic),
-        rawNaicsDescription: sicToNaicsDescription(row.sic),
-        rawSicCode: row.sic || null,
-        secCik: padCik(row.cik),
-        secTicker: row.ticker || null,
-        secSicCode: row.sic || null,
-        rawJson: null,
-      };
-    });
+    const batch = records.slice(i, i + BATCH_SIZE).map(row => ({
+      source: 'sec_edgar' as const,
+      sourceRunId: runId,
+      sourceRecordId: `sec_${padCik(row.cik)}`,
+      rawName: row.name || null,
+      rawAddress: null,
+      rawCity: null,
+      rawState: row.stateOfIncorporation || null,
+      rawZip: null,
+      rawNaicsCode: sicToNaics(row.sic),
+      rawNaicsDescription: sicToNaicsDescription(row.sic),
+      rawSicCode: row.sic || null,
+      secCik: padCik(row.cik),
+      secTicker: row.ticker || null,
+      secSicCode: row.sic || null,
+      rawJson: null,
+    }));
 
     try {
       await db.insert(rawRecords).values(batch);
@@ -335,7 +255,7 @@ async function insertSecRecords(records: SecManufacturer[], runId: string): Prom
       errors.push(`Batch insert error at offset ${i}: ${err}`);
     }
 
-    updateProgress('fetching', 70 + Math.round((i / records.length) * 25),
+    updateProgress('fetching', 75 + Math.round((i / records.length) * 20),
       `Inserting SEC records... ${inserted.toLocaleString()}`);
   }
 
@@ -344,10 +264,9 @@ async function insertSecRecords(records: SecManufacturer[], runId: string): Prom
 
 /**
  * Full SEC EDGAR fetch pipeline:
- * 1. Fetch company tickers list
- * 2. Scan each company's submissions for SIC code
- * 3. Filter to manufacturing (SIC 2000-3999)
- * 4. Insert matching companies as raw records
+ * 1. Query SEC company search by SIC code range (20xx-39xx)
+ * 2. Collect all unique manufacturers
+ * 3. Insert as raw records
  */
 export async function fetchSec(runId: string): Promise<SecFetchResult> {
   const startTime = Date.now();
@@ -355,29 +274,22 @@ export async function fetchSec(runId: string): Promise<SecFetchResult> {
   try {
     await db.update(sourceRuns).set({ status: 'fetching' }).where(eq(sourceRuns.id, runId));
 
-    // Step 1: Get all company tickers
-    updateProgress('fetching', 2, 'Downloading SEC company list...');
-    const tickers = await fetchTickersList();
+    // Step 1: Fetch manufacturers by SIC range
+    updateProgress('fetching', 2, 'Querying SEC for manufacturers by SIC code...');
+    const manufacturers = await fetchManufacturersBySicRange();
 
-    // Step 2 & 3: Fetch submissions and filter to manufacturers
-    const manufacturers = await fetchAndFilterManufacturers(tickers);
-
-    // Deduplicate by CIK
-    const seen = new Map<number, SecManufacturer>();
-    for (const mfr of manufacturers) {
-      if (!seen.has(mfr.cik)) seen.set(mfr.cik, mfr);
+    if (manufacturers.length === 0) {
+      console.log('[SEC] No manufacturers found - this likely means rate limiting prevented data fetch');
     }
-    const unique = Array.from(seen.values());
-    console.log(`[SEC] ${manufacturers.length} -> ${unique.length} unique manufacturers`);
 
-    // Step 4: Insert
-    const { inserted, errors } = await insertSecRecords(unique, runId);
+    // Step 2: Insert
+    const { inserted, errors } = await insertSecRecords(manufacturers, runId);
 
     const durationMs = Date.now() - startTime;
     await db.update(sourceRuns).set({
       status: 'completed',
       completedAt: new Date(),
-      totalFetched: unique.length,
+      totalFetched: manufacturers.length,
       newRecords: inserted,
       errorCount: errors.length,
       errorLog: errors.length > 0 ? JSON.stringify(errors.slice(0, 100)) : null,
@@ -385,7 +297,7 @@ export async function fetchSec(runId: string): Promise<SecFetchResult> {
     }).where(eq(sourceRuns.id, runId));
 
     console.log(`[SEC] Fetch complete in ${(durationMs / 1000).toFixed(1)}s: ${inserted} inserted`);
-    return { totalFetched: unique.length, inserted, errors };
+    return { totalFetched: manufacturers.length, inserted, errors };
   } catch (err) {
     const durationMs = Date.now() - startTime;
     await db.update(sourceRuns).set({

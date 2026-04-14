@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { sourcesApi, pipelineApi } from '@/lib/api';
 import { DATA_SOURCES } from '@shared/types';
-import { Clock, CheckCircle2, XCircle, Loader2, Shield, AlertCircle, Plane, Car } from 'lucide-react';
+import { Clock, CheckCircle2, XCircle, Loader2, Shield, AlertCircle, Plane, Car, BarChart3 } from 'lucide-react';
 
 function formatCST(dateStr: string): string {
   const d = new Date(dateStr);
@@ -40,10 +40,11 @@ export default function Sources() {
 
   const envSources = Object.values(DATA_SOURCES).filter(s => s.key === 'epa_echo' || s.key === 'epa_tri');
   const industrySources = Object.values(DATA_SOURCES).filter(s => s.key === 'faa' || s.key === 'nhtsa' || s.key === 'sam_gov' || s.key === 'sec_edgar');
+  const statisticalSources = Object.values(DATA_SOURCES).filter(s => s.key === 'census_cbp');
   const v2Sources = Object.values(DATA_SOURCES).filter(s => s.key === 'osha' || s.key === 'usda_fsis');
   const manualSource = DATA_SOURCES.manual;
   const isPipelineRunning = pipelineStatus?.running ?? false;
-  const activeSources = ['epa_echo', 'epa_tri', 'faa', 'nhtsa', 'sam_gov', 'sec_edgar'];
+  const activeSources = ['epa_echo', 'epa_tri', 'faa', 'nhtsa', 'sam_gov', 'sec_edgar', 'census_cbp'];
 
   return (
     <div className="space-y-6">
@@ -101,6 +102,20 @@ export default function Sources() {
         title="Industry & Transportation"
         badge={{ label: 'Federal', className: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20' }}
         sources={industrySources}
+        activeSources={activeSources}
+        data={data}
+        isLoading={isLoading}
+        isPipelineRunning={isPipelineRunning}
+        pipelineStatus={pipelineStatus}
+        fetchMutation={fetchMutation}
+      />
+
+      {/* Statistical / Economic Sources */}
+      <SourceGroup
+        icon={<BarChart3 className="w-4 h-4 text-pink-400" />}
+        title="Statistical & Economic"
+        badge={{ label: 'Federal', className: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20' }}
+        sources={statisticalSources}
         activeSources={activeSources}
         data={data}
         isLoading={isLoading}

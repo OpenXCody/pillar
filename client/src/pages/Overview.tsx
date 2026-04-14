@@ -7,10 +7,10 @@ import { US_STATES } from '@shared/states';
 import {
   Database, Factory, Building2, GitCompare, ArrowRight,
   ChevronDown, ChevronUp, CheckCircle2, AlertCircle, Loader2,
-  LayoutDashboard, MapPin, Boxes,
+  LayoutDashboard, MapPin, Boxes, BarChart3,
 } from 'lucide-react';
 
-type Tab = 'dashboard' | 'states' | 'industries';
+type Tab = 'dashboard' | 'states' | 'industries' | 'coverage';
 const INITIAL_STATES_SHOWN = 10;
 
 /** NAICS 3-digit subsector friendly names */
@@ -71,11 +71,13 @@ export default function Overview() {
         <TabButton icon={<LayoutDashboard className="w-3.5 h-3.5" />} label="Dashboard" active={activeTab === 'dashboard'} onClick={() => setTab('dashboard')} />
         <TabButton icon={<MapPin className="w-3.5 h-3.5" />} label="States" active={activeTab === 'states'} onClick={() => setTab('states')} />
         <TabButton icon={<Boxes className="w-3.5 h-3.5" />} label="Industries" active={activeTab === 'industries'} onClick={() => setTab('industries')} />
+        <TabButton icon={<BarChart3 className="w-3.5 h-3.5" />} label="Coverage" active={activeTab === 'coverage'} onClick={() => setTab('coverage')} />
       </div>
 
       {activeTab === 'dashboard' && <DashboardTab />}
       {activeTab === 'states' && <StatesTab />}
       {activeTab === 'industries' && <IndustriesTab />}
+      {activeTab === 'coverage' && <CoverageTab />}
     </div>
   );
 }
@@ -469,6 +471,112 @@ function KpiCard({ icon, label, value, onClick }: {
         <span className="text-xs text-fg-soft">{label}</span>
       </div>
       <p className="text-2xl font-semibold text-fg-default">{value}</p>
+    </div>
+  );
+}
+
+/* ─── Coverage Tab ─── */
+function CoverageTab() {
+  const navigate = useNavigate();
+  const { data, isLoading } = useQuery({
+    queryKey: ['stats', 'coverage'],
+    queryFn: statsApi.coverage,
+  });
+
+  if (isLoading) return <div className="text-center py-12 text-sm text-fg-soft">Loading coverage data...</div>;
+  if (!data || !data.byState.length) {
+    return (
+      <div className="text-center py-12">
+        <BarChart3 className="w-10 h-10 text-fg-soft mx-auto mb-3" />
+        <p className="text-sm text-fg-muted">No Census CBP data available</p>
+        <p className="text-xs text-fg-soft mt-1">Sync Census CBP from the Sources page to see coverage analysis</p>
+      </div>
+    );
+  }
+
+  const { summary, byState } = data;
+  const coverageColor = summary.overallCoverage >= 80 ? 'text-emerald-400' : summary.overallCoverage >= 40 ? 'text-amber-400' : 'text-red-400';
+
+  return (
+    <div className="space-y-6">
+      <p className="text-sm text-fg-muted">
+        Comparing Pillar factory records against Census Bureau County Business Patterns (2021) manufacturing establishment counts
+      </p>
+
+      {/* Summary Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="p-4 rounded-xl bg-white/[0.02] border border-white/5">
+          <span className="text-xs text-fg-soft">Census Establishments</span>
+          <p className="text-2xl font-semibold text-fg-default mt-2">{summary.censusEstablishments.toLocaleString()}</p>
+        </div>
+        <div className="p-4 rounded-xl bg-white/[0.02] border border-white/5">
+          <span className="text-xs text-fg-soft">Our Facilities</span>
+          <p className="text-2xl font-semibold text-fg-default mt-2">{summary.ourFacilities.toLocaleString()}</p>
+        </div>
+        <div className="p-4 rounded-xl bg-white/[0.02] border border-white/5">
+          <span className="text-xs text-fg-soft">Overall Coverage</span>
+          <p className={`text-2xl font-semibold mt-2 ${coverageColor}`}>{summary.overallCoverage}%</p>
+        </div>
+        <div className="p-4 rounded-xl bg-white/[0.02] border border-white/5">
+          <span className="text-xs text-fg-soft">Mfg Employees (Census)</span>
+          <p className="text-2xl font-semibold text-fg-default mt-2">{(summary.totalManufacturingEmployees / 1_000_000).toFixed(1)}M</p>
+        </div>
+      </div>
+
+      {/* State-by-State Coverage */}
+      <div className="bg-white/[0.02] border border-white/5 rounded-xl overflow-hidden">
+        <div className="px-4 py-3 border-b border-white/5">
+          <h3 className="text-sm font-medium text-fg-default">Coverage by State</h3>
+          <p className="text-xs text-fg-soft mt-0.5">States sorted by Census manufacturing establishment count</p>
+        </div>
+
+        <div className="divide-y divide-white/5">
+          {/* Header */}
+          <div className="grid grid-cols-12 gap-2 px-4 py-2 text-[10px] text-fg-soft uppercase tracking-wider">
+            <div className="col-span-2">State</div>
+            <div className="col-span-2 text-right">Census Est.</div>
+            <div className="col-span-2 text-right">Our Records</div>
+            <div className="col-span-2 text-right">Coverage</div>
+            <div className="col-span-2 text-right">Gap</div>
+            <div className="col-span-2" />
+          </div>
+
+          {byState.map(row => {
+            const pct = row.coveragePercent;
+            const barColor = pct >= 80 ? 'bg-emerald-400' : pct >= 40 ? 'bg-amber-400' : 'bg-red-400';
+            const textColor = pct >= 80 ? 'text-emerald-400' : pct >= 40 ? 'text-amber-400' : 'text-red-400';
+
+            return (
+              <div
+                key={row.state}
+                onClick={() => navigate(`/states/${row.state}`)}
+                className="grid grid-cols-12 gap-2 px-4 py-2.5 hover:bg-white/[0.03] cursor-pointer transition-colors items-center"
+              >
+                <div className="col-span-2">
+                  <span className="text-xs font-medium text-fg-default">{STATE_NAME_MAP[row.state] || row.state}</span>
+                </div>
+                <div className="col-span-2 text-right">
+                  <span className="text-xs text-fg-muted">{row.censusEstablishments.toLocaleString()}</span>
+                </div>
+                <div className="col-span-2 text-right">
+                  <span className="text-xs text-fg-default">{row.ourFacilities.toLocaleString()}</span>
+                </div>
+                <div className="col-span-2 text-right">
+                  <span className={`text-xs font-medium ${textColor}`}>{pct}%</span>
+                </div>
+                <div className="col-span-2 text-right">
+                  <span className="text-xs text-fg-soft">{row.gap > 0 ? `-${row.gap.toLocaleString()}` : '—'}</span>
+                </div>
+                <div className="col-span-2">
+                  <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
+                    <div className={`h-full rounded-full ${barColor}`} style={{ width: `${Math.min(pct, 100)}%` }} />
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 }

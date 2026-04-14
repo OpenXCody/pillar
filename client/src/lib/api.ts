@@ -29,6 +29,13 @@ export const statsApi = {
     sectors: Array<{ sector: string; facilityCount: number; companyCount: number }>;
     subsectors: Array<{ subsector: string; facilityCount: number; companyCount: number; topStates: Array<{ state: string; count: number }> }>;
   }>('/stats/industries'),
+  coverage: () => apiFetch<{
+    summary: { censusEstablishments: number; ourFacilities: number; overallCoverage: number; totalManufacturingEmployees: number };
+    byState: Array<{
+      state: string; censusEstablishments: number; censusEmployees: number; censusPayroll: number;
+      ourFacilities: number; coveragePercent: number; gap: number;
+    }>;
+  }>('/stats/coverage'),
 };
 
 export const companiesApi = {

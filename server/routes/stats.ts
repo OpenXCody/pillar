@@ -150,3 +150,73 @@ statsRouter.get('/industries', async (_req, res) => {
     res.status(500).json({ error: 'Failed to fetch industries' });
   }
 });
+
+/**
+ * GET /stats/coverage — Compare our facility data to Census CBP establishment counts.
+ * Shows where we have good coverage vs gaps.
+ */
+statsRouter.get('/coverage', async (_req, res) => {
+  try {
+    // Get Census CBP totals by state
+    const censusByState = await db.execute(sql`
+      SELECT
+        raw_state as state,
+        SUM(census_establishment_count)::int as census_establishments,
+        SUM(census_employees)::int as census_employees,
+        SUM(census_annual_payroll)::int as census_payroll
+      FROM raw_records
+      WHERE source = 'census_cbp' AND census_establishment_count IS NOT NULL AND raw_state IS NOT NULL
+      GROUP BY raw_state
+      ORDER BY SUM(census_establishment_count) DESC
+    `);
+
+    // Get our facility counts by state
+    const ourByState = await db.execute(sql`
+      SELECT state, count(*)::int as facility_count
+      FROM facilities
+      WHERE state IS NOT NULL
+      GROUP BY state
+    `);
+
+    const ourMap = new Map<string, number>();
+    for (const r of ourByState) {
+      ourMap.set(String(r.state), Number(r.facility_count));
+    }
+
+    // Build coverage analysis
+    const stateCoverage = censusByState.map((r: Record<string, unknown>) => {
+      const state = String(r.state);
+      const censusCount = Number(r.census_establishments);
+      const ourCount = ourMap.get(state) || 0;
+      const coverageRatio = censusCount > 0 ? Math.round((ourCount / censusCount) * 100) : 0;
+
+      return {
+        state,
+        censusEstablishments: censusCount,
+        censusEmployees: Number(r.census_employees) || 0,
+        censusPayroll: Number(r.census_payroll) || 0,
+        ourFacilities: ourCount,
+        coveragePercent: Math.min(coverageRatio, 999), // Cap at 999% for display
+        gap: Math.max(censusCount - ourCount, 0),
+      };
+    }).sort((a, b) => b.censusEstablishments - a.censusEstablishments);
+
+    // Summary stats
+    const totalCensus = stateCoverage.reduce((s, r) => s + r.censusEstablishments, 0);
+    const totalOurs = stateCoverage.reduce((s, r) => s + r.ourFacilities, 0);
+    const totalEmployees = stateCoverage.reduce((s, r) => s + r.censusEmployees, 0);
+
+    res.json({
+      summary: {
+        censusEstablishments: totalCensus,
+        ourFacilities: totalOurs,
+        overallCoverage: totalCensus > 0 ? Math.round((totalOurs / totalCensus) * 100) : 0,
+        totalManufacturingEmployees: totalEmployees,
+      },
+      byState: stateCoverage,
+    });
+  } catch (err) {
+    console.error('Error fetching coverage:', err);
+    res.status(500).json({ error: 'Failed to fetch coverage stats' });
+  }
+});

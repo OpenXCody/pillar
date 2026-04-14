@@ -4,7 +4,7 @@ import { relations } from 'drizzle-orm';
 // ─── Enums ───────────────────────────────────────────────────────────
 
 export const dataSourceEnum = pgEnum('data_source', [
-  'epa_echo', 'epa_tri', 'osha', 'usda_fsis', 'faa', 'nhtsa', 'sam_gov', 'sec_edgar', 'manual',
+  'epa_echo', 'epa_tri', 'osha', 'usda_fsis', 'faa', 'nhtsa', 'sam_gov', 'sec_edgar', 'census_cbp', 'manual',
 ]);
 
 export const runStatusEnum = pgEnum('run_status', [
@@ -109,6 +109,12 @@ export const rawRecords = pgTable('raw_records', {
   secCik: text('sec_cik'),
   secTicker: text('sec_ticker'),
   secSicCode: text('sec_sic_code'),
+
+  // Census CBP fields
+  censusCountyFips: varchar('census_county_fips', { length: 5 }),
+  censusEstablishmentCount: integer('census_establishment_count'),
+  censusAnnualPayroll: integer('census_annual_payroll'),
+  censusEmployees: integer('census_employees'),
 
   // Linkage to golden record
   facilityId: uuid('facility_id').references(() => facilities.id, { onDelete: 'set null' }),

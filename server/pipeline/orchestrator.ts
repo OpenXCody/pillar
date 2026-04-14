@@ -14,6 +14,7 @@ import { fetchFaa } from './fetch/faaConnector.js';
 import { fetchNhtsa } from './fetch/nhtsaConnector.js';
 import { fetchSamGov } from './fetch/samConnector.js';
 import { fetchSec } from './fetch/secConnector.js';
+import { fetchCensusCbp } from './fetch/censusCbpConnector.js';
 import { runMatching } from './match/matcher.js';
 import { runMerge } from './merge/merger.js';
 import type { DataSource } from '@shared/types.js';
@@ -117,6 +118,10 @@ export async function runPipeline(source: DataSource): Promise<PipelineResult> {
       const secResult = await fetchSec(run.id);
       totalFetched = secResult.totalFetched;
       inserted = secResult.inserted;
+    } else if (source === 'census_cbp') {
+      const cbpResult = await fetchCensusCbp(run.id);
+      totalFetched = cbpResult.totalFetched;
+      inserted = cbpResult.inserted;
     } else {
       throw new Error(`Source connector not implemented: ${source}`);
     }
