@@ -1,7 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { sourcesApi, pipelineApi } from '@/lib/api';
 import { DATA_SOURCES } from '@shared/types';
-import { Clock, CheckCircle2, XCircle, Loader2, AlertCircle } from 'lucide-react';
+import { useState } from 'react';
+import { CheckCircle2, Loader2, Download, FileText, X } from 'lucide-react';
 
 function formatCST(dateStr: string): string {
   const d = new Date(dateStr);
@@ -85,7 +86,7 @@ export default function Sources() {
       {/* Environmental Sources */}
       <SourceGroup
         title="Environmental & Compliance"
-        badge={{ label: 'Federal', className: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20' }}
+
         sources={envSources}
         activeSources={activeSources}
         data={data}
@@ -98,7 +99,7 @@ export default function Sources() {
       {/* Industry-Specific Sources */}
       <SourceGroup
         title="Industry & Transportation"
-        badge={{ label: 'Federal', className: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20' }}
+
         sources={industrySources}
         activeSources={activeSources}
         data={data}
@@ -111,7 +112,7 @@ export default function Sources() {
       {/* Statistical / Economic Sources */}
       <SourceGroup
         title="Statistical & Economic"
-        badge={{ label: 'Federal', className: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20' }}
+
         sources={statisticalSources}
         activeSources={activeSources}
         data={data}
@@ -124,7 +125,7 @@ export default function Sources() {
       {/* Workforce & Safety Sources */}
       <SourceGroup
         title="Workforce & Safety"
-        badge={{ label: 'Federal', className: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20' }}
+
         sources={v2Sources}
         activeSources={activeSources}
         data={data}
@@ -134,29 +135,16 @@ export default function Sources() {
         fetchMutation={fetchMutation}
       />
 
-      {/* Partner / Manual Sources */}
+      {/* Partner Data */}
       <div>
-        <div className="flex items-center gap-2 mb-2">
-          <div className="w-4 h-4 rounded-full flex items-center justify-center" style={{ backgroundColor: manualSource.color + '22' }}>
-            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: manualSource.color }} />
-          </div>
-          <h3 className="text-sm font-medium text-fg-muted">Partner & Research Data</h3>
-        </div>
+        <h3 className="text-sm font-medium text-fg-muted mb-2">Partner Data</h3>
         <div className="bg-white/[0.02] backdrop-blur-sm border border-white/5 rounded-xl p-4">
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: manualSource.color }} />
-              <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                  <h3 className="text-sm font-medium text-fg-default">{manualSource.name}</h3>
-                  <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-violet-500/10 text-violet-400 border border-violet-500/20">Partner</span>
-                </div>
-                <p className="text-xs text-fg-soft mt-0.5">{manualSource.description}</p>
-              </div>
-            </div>
+          <div className="min-w-0">
+            <h3 className="text-sm font-medium text-fg-default">{manualSource.name}</h3>
+            <p className="text-xs text-fg-soft mt-0.5">{manualSource.description}</p>
           </div>
-          <div className="mt-2.5 flex items-center gap-6 text-xs text-fg-muted">
-            <span>{isLoading ? '...' : `${(data?.sources.find(s => s.key === 'manual')?.rawRecordCount ?? 0).toLocaleString()} records`}</span>
+          <div className="mt-2 text-xs text-fg-soft">
+            {isLoading ? '...' : `${(data?.sources.find(s => s.key === 'manual')?.rawRecordCount ?? 0).toLocaleString()} records`}
           </div>
         </div>
       </div>
@@ -164,10 +152,19 @@ export default function Sources() {
   );
 }
 
+/** Guidance for sources that need manual data files or have known issues */
+const SOURCE_HELP: Record<string, string> = {
+  faa: 'Place faa_pah.csv in downloads/ folder — export from drs.faa.gov',
+  sam_gov: 'Needs SAM_GOV_API_KEY in .env — register at sam.gov/data-services',
+  sec_edgar: 'SEC rate-limits requests — retry or wait a few minutes',
+  osha: 'Place osha_inspections.csv in downloads/ — from enforcedata.dol.gov',
+  usda_fsis: 'Place fsis_directory.csv in downloads/ — from fsis.usda.gov',
+  census_cbp: 'Census API can be slow — retry if it times out',
+};
+
 /** Reusable source group component */
-function SourceGroup({ title, badge, sources, activeSources, data, isLoading, isPipelineRunning, pipelineStatus, fetchMutation }: {
+function SourceGroup({ title, sources, activeSources, data, isLoading, isPipelineRunning, pipelineStatus, fetchMutation }: {
   title: string;
-  badge: { label: string; className: string };
   sources: (typeof DATA_SOURCES)[keyof typeof DATA_SOURCES][];
   activeSources: string[];
   data: { sources: Array<{ key: string; lastRun: import('@shared/types').SourceRun | null; rawRecordCount: number }> } | undefined;
@@ -176,6 +173,8 @@ function SourceGroup({ title, badge, sources, activeSources, data, isLoading, is
   pipelineStatus: { running: boolean; currentSource: string | null; stageProgress: number; stageLabel: string | null; elapsedMs: number | null } | undefined;
   fetchMutation: { mutate: (source: string) => void };
 }) {
+  const [reportOpen, setReportOpen] = useState<string | null>(null);
+
   return (
     <div>
       <h3 className="text-sm font-medium text-fg-muted mb-2">{title}</h3>
@@ -187,6 +186,9 @@ function SourceGroup({ title, badge, sources, activeSources, data, isLoading, is
           const isSyncing = isPipelineRunning && pipelineStatus?.currentSource === source.key;
           const isActive = activeSources.includes(source.key);
           const isSynced = recordCount > 0 && lastRun?.status === 'completed';
+          const isFailed = lastRun?.status === 'failed' || (lastRun?.status === 'completed' && recordCount === 0 && lastRun.totalFetched === 0);
+          const helpText = isFailed ? SOURCE_HELP[source.key] : null;
+          const showReport = reportOpen === source.key;
 
           return (
             <div key={source.key} className="bg-white/[0.02] backdrop-blur-sm border border-white/5 rounded-xl p-4">
@@ -196,70 +198,76 @@ function SourceGroup({ title, badge, sources, activeSources, data, isLoading, is
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
                       <h3 className="text-sm font-medium text-fg-default">{source.name}</h3>
-                      <span className={`text-[10px] px-1.5 py-0.5 rounded-full border ${badge.className}`}>{badge.label}</span>
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-white/5 text-fg-soft border border-white/5">Federal</span>
                     </div>
                     <p className="text-xs text-fg-soft mt-0.5">{source.description}</p>
                   </div>
                 </div>
-                {isSyncing ? (
-                  <span className="flex items-center gap-2 flex-shrink-0 px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded-full text-xs font-medium text-emerald-400">
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" /> Syncing...
-                  </span>
-                ) : isActive ? (
-                  isSynced ? (
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  {/* Last report button */}
+                  {lastRun && lastRun.status === 'completed' && lastRun.totalFetched > 0 && (
                     <button
-                      onClick={() => {
-                        if (window.confirm(`Re-sync ${source.name}? This will download the latest dataset and may take several minutes.`)) {
-                          fetchMutation.mutate(source.key);
-                        }
-                      }}
-                      disabled={isPipelineRunning}
-                      className="flex items-center justify-center gap-2 flex-shrink-0 px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded-full text-xs font-medium text-emerald-400 hover:bg-emerald-500/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                      onClick={() => setReportOpen(showReport ? null : source.key)}
+                      className="relative group/tip p-1.5 rounded-lg hover:bg-white/5 transition-colors"
                     >
-                      <CheckCircle2 className="w-3.5 h-3.5" /> Synced
+                      <FileText className="w-3.5 h-3.5 text-fg-soft" />
+                      <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 px-2 py-1 text-[10px] text-fg-default bg-bg-elevated border border-border-subtle rounded-md whitespace-nowrap opacity-0 pointer-events-none group-hover/tip:opacity-100 transition-opacity z-10">Last sync report</span>
                     </button>
-                  ) : (
-                    <button
-                      onClick={() => fetchMutation.mutate(source.key)}
-                      disabled={isPipelineRunning}
-                      className="flex items-center justify-center gap-2 flex-shrink-0 px-3 py-1.5 bg-amber-500/10 border border-amber-500/20 rounded-full text-xs font-medium text-amber-400 hover:bg-amber-500/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                    >
-                      <AlertCircle className="w-3.5 h-3.5" /> Update Ready
-                    </button>
-                  )
-                ) : (
-                  <span className="flex-shrink-0 px-3 py-1.5 text-xs text-fg-soft border border-white/5 rounded-full">
-                    Coming Soon
-                  </span>
-                )}
+                  )}
+                  {/* Sync status / action */}
+                  {isSyncing ? (
+                    <Loader2 className="w-4 h-4 text-emerald-400 animate-spin" />
+                  ) : isActive ? (
+                    isSynced ? (
+                      <button
+                        onClick={() => {
+                          if (window.confirm(`Re-sync ${source.name}?`)) {
+                            fetchMutation.mutate(source.key);
+                          }
+                        }}
+                        disabled={isPipelineRunning}
+                        className="relative group/tip disabled:opacity-40"
+                      >
+                        <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                        <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 px-2 py-1 text-[10px] text-fg-default bg-bg-elevated border border-border-subtle rounded-md whitespace-nowrap opacity-0 pointer-events-none group-hover/tip:opacity-100 transition-opacity z-10">Synced — click to re-sync</span>
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => fetchMutation.mutate(source.key)}
+                        disabled={isPipelineRunning}
+                        className="relative group/tip disabled:opacity-40"
+                      >
+                        <Download className="w-4 h-4 text-amber-400" />
+                        <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 px-2 py-1 text-[10px] text-fg-default bg-bg-elevated border border-border-subtle rounded-md whitespace-nowrap opacity-0 pointer-events-none group-hover/tip:opacity-100 transition-opacity z-10">Sync now</span>
+                      </button>
+                    )
+                  ) : null}
+                </div>
               </div>
 
-              {/* Metadata row */}
-              <div className="mt-2.5 flex items-center gap-6 text-xs text-fg-muted">
+              {/* Metadata row — plain gray, no status icons */}
+              <div className="mt-2 flex items-center gap-4 text-xs text-fg-soft">
                 <span>{isLoading ? '...' : `${recordCount.toLocaleString()} records`}</span>
                 {lastRun && (
-                  <>
-                    <span className="flex items-center gap-1">
-                      {lastRun.status === 'completed' ? (
-                        <CheckCircle2 className="w-3 h-3 text-emerald-500" />
-                      ) : lastRun.status === 'failed' ? (
-                        <XCircle className="w-3 h-3 text-red-500" />
-                      ) : (
-                        <Clock className="w-3 h-3" />
-                      )}
-                      Last synced: {formatCST(lastRun.startedAt)}
-                    </span>
-                    {lastRun.durationMs && (
-                      <span>{(lastRun.durationMs / 1000).toFixed(1)}s</span>
-                    )}
-                  </>
+                  <span>Last synced {formatCST(lastRun.startedAt)}</span>
                 )}
-                {!lastRun && <span className="text-fg-soft">Never synced</span>}
+                {!lastRun && <span>Never synced</span>}
               </div>
 
-              {/* Sync results summary */}
-              {lastRun && lastRun.status === 'completed' && lastRun.totalFetched > 0 && (
-                <div className="mt-2.5 pt-2.5 border-t border-white/5">
+              {/* Help text for sources that need manual data or have issues */}
+              {helpText && (
+                <p className="mt-2 text-xs text-fg-soft italic">{helpText}</p>
+              )}
+
+              {/* Sync report popover */}
+              {showReport && lastRun && (
+                <div className="mt-3 pt-3 border-t border-white/5">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-medium text-fg-muted">Sync Report — {formatCST(lastRun.startedAt)}</span>
+                    <button onClick={() => setReportOpen(null)} className="p-0.5 hover:bg-white/5 rounded">
+                      <X className="w-3 h-3 text-fg-soft" />
+                    </button>
+                  </div>
                   <div className="grid grid-cols-4 gap-2 text-center">
                     <div>
                       <div className="text-sm font-semibold text-fg-default">{lastRun.totalFetched.toLocaleString()}</div>
@@ -278,6 +286,9 @@ function SourceGroup({ title, badge, sources, activeSources, data, isLoading, is
                       <div className="text-[10px] text-fg-soft">Golden</div>
                     </div>
                   </div>
+                  {lastRun.durationMs && (
+                    <div className="mt-2 text-[10px] text-fg-soft text-center">Completed in {(lastRun.durationMs / 1000).toFixed(1)}s</div>
+                  )}
                 </div>
               )}
             </div>
