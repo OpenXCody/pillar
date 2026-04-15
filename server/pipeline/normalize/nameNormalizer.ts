@@ -11,7 +11,7 @@ import {
   cleanCompanyName,
   extractCompanyFromFacilityName,
   isBlockedCompanyName,
-} from '@shared/companyNormalization.js';
+} from '../../../shared/companyNormalization.js';
 
 export interface NormalizedNames {
   facilityName: string;

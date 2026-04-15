@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { db } from '../db/index.js';
 import { companies, facilities } from '../db/schema.js';
 import { eq, ilike, and, desc, sql, count } from 'drizzle-orm';
-import { INDUSTRY_CATEGORIES } from '@shared/naics.js';
+import { INDUSTRY_CATEGORIES } from '../../shared/naics.js';
 
 export const companiesRouter = Router();
 

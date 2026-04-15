@@ -12,7 +12,7 @@ import { createReadStream } from 'fs';
 import Papa from 'papaparse';
 import { db } from '../db/index.js';
 import { companies } from '../db/schema.js';
-import { normalizeCompanyName } from '@shared/companyNormalization.js';
+import { normalizeCompanyName } from '../../shared/companyNormalization.js';
 import { sql } from 'drizzle-orm';
 
 const CSV_PATH = '/Users/cody/Downloads/TX_Manufacturing_Companies.csv';

@@ -15,7 +15,7 @@ import { eq, sql, and, isNull } from 'drizzle-orm';
 import { selectBestValue } from './fieldPriority.js';
 import { resolveCompanyName, normalizeFacilityName } from '../normalize/nameNormalizer.js';
 import { describeNaics } from '../normalize/naicsLookup.js';
-import type { DataSource } from '@shared/types.js';
+import type { DataSource } from '../../../shared/types.js';
 
 export interface MergeResult {
   facilitiesCreated: number;

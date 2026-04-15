@@ -19,7 +19,7 @@ import Papa from 'papaparse';
 import { db } from '../../db/index.js';
 import { rawRecords, sourceRuns } from '../../db/schema.js';
 import { eq } from 'drizzle-orm';
-import { isManufacturingNaics } from '@shared/naics.js';
+import { isManufacturingNaics } from '../../../shared/naics.js';
 
 const ECHO_DOWNLOAD_URL = 'https://echo.epa.gov/files/echodownloads/echo_exporter.zip';
 const DOWNLOAD_DIR = path.join(process.cwd(), 'downloads');

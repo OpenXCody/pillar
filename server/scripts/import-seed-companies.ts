@@ -13,7 +13,7 @@ import Papa from 'papaparse';
 import { db } from '../db/index.js';
 import { rawRecords, facilities, companies, facilitySources, sourceRuns } from '../db/schema.js';
 import { eq } from 'drizzle-orm';
-import { normalizeCompanyName } from '@shared/companyNormalization.js';
+import { normalizeCompanyName } from '../../shared/companyNormalization.js';
 
 const CSV_PATH = '/Users/cody/Downloads/All Company Names - Seed Data-2.csv';
 

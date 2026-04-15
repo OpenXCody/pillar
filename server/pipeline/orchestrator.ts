@@ -19,7 +19,7 @@ import { fetchOsha } from './fetch/oshaConnector.js';
 import { fetchFsis } from './fetch/fsisConnector.js';
 import { runMatching } from './match/matcher.js';
 import { runMerge } from './merge/merger.js';
-import type { DataSource } from '@shared/types.js';
+import type { DataSource } from '../../shared/types.js';
 
 export interface PipelineResult {
   source: DataSource;

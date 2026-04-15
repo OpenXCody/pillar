@@ -10,7 +10,7 @@
 import { db } from '../db/index.js';
 import { companies } from '../db/schema.js';
 import { sql } from 'drizzle-orm';
-import { normalizeCompanyName, cleanCompanyName } from '@shared/companyNormalization.js';
+import { normalizeCompanyName, cleanCompanyName } from '../../shared/companyNormalization.js';
 
 const SEC_TICKERS_URL = 'https://www.sec.gov/files/company_tickers_exchange.json';
 const USER_AGENT = 'Pillar-Data-Pipeline/1.0 (contact@o-10.com)';

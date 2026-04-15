@@ -5,7 +5,7 @@
  * determine which source's value wins.
  */
 
-import type { DataSource } from '@shared/types.js';
+import type { DataSource } from '../../../shared/types.js';
 
 type FieldName = 'name' | 'address' | 'city' | 'state' | 'zip' | 'county' |
   'latitude' | 'longitude' | 'companyName' | 'naicsCode' | 'employeeCount';

@@ -2,7 +2,7 @@
  * NAICS Code Validation and SIC-NAICS Crosswalk
  */
 
-import { isManufacturingNaics, getNaicsDescription } from '@shared/naics.js';
+import { isManufacturingNaics, getNaicsDescription } from '../../../shared/naics.js';
 
 /**
  * Validate and clean a NAICS code.

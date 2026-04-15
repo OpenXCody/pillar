@@ -126,7 +126,7 @@ statsRouter.get('/industries', async (_req, res) => {
     }
 
     // Build category aggregations from subsector data
-    const { INDUSTRY_CATEGORIES } = await import('@shared/naics.js');
+    const { INDUSTRY_CATEGORIES } = await import('../../shared/naics.js');
     const categoryMap = new Map<string, { key: string; label: string; facilityCount: number; companyCount: number; subsectors: string[] }>();
     for (const cat of INDUSTRY_CATEGORIES) {
       categoryMap.set(cat.key, { key: cat.key, label: cat.label, facilityCount: 0, companyCount: 0, subsectors: [] });

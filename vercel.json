@@ -1,14 +1,15 @@
 {
-  "buildCommand": "vite build",
+  "buildCommand": "cd client && npx vite build --outDir ../dist",
   "outputDirectory": "dist",
+  "installCommand": "npm install",
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api" },
     { "source": "/((?!api/).*)", "destination": "/index.html" }
   ],
   "functions": {
     "api/index.ts": {
-      "runtime": "@vercel/node@3",
-      "maxDuration": 30
+      "maxDuration": 30,
+      "includeFiles": "server/**,shared/**"
     }
   }
 }

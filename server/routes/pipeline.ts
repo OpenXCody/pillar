@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { getPipelineStatus, runPipeline } from '../pipeline/orchestrator.js';
 import { runEnrichment } from '../pipeline/enrichment.js';
-import type { DataSource } from '@shared/types.js';
+import type { DataSource } from '../../shared/types.js';
 
 export const pipelineRouter = Router();
 

@@ -3,7 +3,7 @@ import { db } from '../db/index.js';
 import { sourceRuns, rawRecords } from '../db/schema.js';
 import { eq, count, desc } from 'drizzle-orm';
 import { runPipeline } from '../pipeline/orchestrator.js';
-import type { DataSource } from '@shared/types.js';
+import type { DataSource } from '../../shared/types.js';
 
 export const sourcesRouter = Router();
 

@@ -12,7 +12,7 @@ import { db } from '../db/index.js';
 import { companies } from '../db/schema.js';
 import { sql } from 'drizzle-orm';
 import { resolveCompanyName, cleanCompanyName } from '../pipeline/normalize/nameNormalizer.js';
-import { COMPANY_RULES, normalizeCompanyName } from '@shared/companyNormalization.js';
+import { COMPANY_RULES, normalizeCompanyName } from '../../shared/companyNormalization.js';
 
 const BATCH_SIZE = 2000;
 const INSERT_BATCH = 500;
