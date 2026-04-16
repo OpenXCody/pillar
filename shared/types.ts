@@ -1,4 +1,4 @@
-export type DataSource = 'epa_echo' | 'epa_tri' | 'osha' | 'usda_fsis' | 'faa' | 'nhtsa' | 'sam_gov' | 'sec_edgar' | 'census_cbp' | 'manual';
+export type DataSource = 'epa_echo' | 'epa_tri' | 'osha' | 'usda_fsis' | 'nhtsa' | 'census_cbp' | 'manual';
 export type RunStatus = 'pending' | 'fetching' | 'normalizing' | 'matching' | 'merging' | 'completed' | 'failed';
 export type MatchStatus = 'pending' | 'confirmed' | 'rejected' | 'auto_matched';
 export type MatchType = 'geo_name' | 'address_exact' | 'frs_id' | 'cross_source';
@@ -41,33 +41,12 @@ export const DATA_SOURCES: Record<DataSource, SourceInfo> = {
     color: '#F87171',
     gradient: 'linear-gradient(135deg, #EF4444, #FCA5A5)',
   },
-  faa: {
-    key: 'faa',
-    name: 'FAA PAH',
-    description: 'Production Approval Holders — PC, PMA, and TSOA certified manufacturers',
-    color: '#38BDF8',
-    gradient: 'linear-gradient(135deg, #0EA5E9, #7DD3FC)',
-  },
   nhtsa: {
     key: 'nhtsa',
     name: 'NHTSA',
     description: 'Registered vehicle and equipment manufacturers from the vPIC database',
     color: '#FB923C',
     gradient: 'linear-gradient(135deg, #F97316, #FDBA74)',
-  },
-  sam_gov: {
-    key: 'sam_gov',
-    name: 'SAM.gov',
-    description: 'Federal contractor registry — manufacturers registered in the System for Award Management',
-    color: '#818CF8',
-    gradient: 'linear-gradient(135deg, #6366F1, #A5B4FC)',
-  },
-  sec_edgar: {
-    key: 'sec_edgar',
-    name: 'SEC EDGAR',
-    description: 'Publicly traded manufacturers from Securities and Exchange Commission filings',
-    color: '#2DD4BF',
-    gradient: 'linear-gradient(135deg, #14B8A6, #5EEAD4)',
   },
   census_cbp: {
     key: 'census_cbp',

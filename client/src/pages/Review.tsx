@@ -110,10 +110,23 @@ export default function Review() {
   };
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-5 max-w-5xl">
       <div>
         <h2 className="text-xl font-semibold text-fg-default">Review Queue</h2>
-        <p className="text-sm text-fg-muted mt-1">Potential duplicate factories requiring manual review</p>
+        <p className="text-sm text-fg-muted mt-1">
+          Record pairs the matcher suspects are the same factory but can't confirm automatically (score 60–89%). You decide whether to merge them.
+        </p>
+      </div>
+
+      {/* How it works */}
+      <div className="bg-indigo-500/5 border border-indigo-500/20 rounded-xl p-4 text-xs text-fg-muted">
+        <div className="flex items-start gap-3">
+          <GitCompare className="w-4 h-4 text-indigo-400 flex-shrink-0 mt-0.5" />
+          <div className="space-y-1.5">
+            <p><span className="text-emerald-400 font-medium">Merge as same</span> — these two records describe the same physical factory. They'll collapse into one golden record, keeping the best value from each field.</p>
+            <p><span className="text-red-400 font-medium">Keep separate</span> — these are different factories that happen to look similar. Both records stay as independent facilities.</p>
+          </div>
+        </div>
       </div>
 
       {/* Status tabs */}
@@ -153,13 +166,15 @@ export default function Review() {
           <button
             onClick={() => batchMutation.mutate({ ids: [...selectedIds], action: 'confirm' })}
             disabled={batchMutation.isPending}
+            title="Merge selected pairs into single golden records"
             className="px-3 py-1.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-lg text-xs font-medium hover:bg-emerald-500/20 transition-colors disabled:opacity-50"
-          >Confirm All</button>
+          >Merge as Same</button>
           <button
             onClick={() => batchMutation.mutate({ ids: [...selectedIds], action: 'reject' })}
             disabled={batchMutation.isPending}
+            title="Mark selected pairs as distinct factories"
             className="px-3 py-1.5 bg-red-500/10 text-red-400 border border-red-500/20 rounded-lg text-xs font-medium hover:bg-red-500/20 transition-colors disabled:opacity-50"
-          >Reject All</button>
+          >Keep Separate</button>
           <button
             onClick={() => setSelectedIds(new Set())}
             className="text-xs text-fg-soft hover:text-fg-muted transition-colors"
@@ -243,14 +258,14 @@ export default function Review() {
                         <button
                           onClick={(e) => { e.stopPropagation(); confirmMutation.mutate(candidate.id); }}
                           className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 transition-colors"
-                          title="Confirm match"
+                          title="Merge as same factory"
                         >
                           <Check className="w-3.5 h-3.5" />
                         </button>
                         <button
                           onClick={(e) => { e.stopPropagation(); rejectMutation.mutate(candidate.id); }}
                           className="p-1.5 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors"
-                          title="Reject match"
+                          title="Keep separate — these are different factories"
                         >
                           <X className="w-3.5 h-3.5" />
                         </button>

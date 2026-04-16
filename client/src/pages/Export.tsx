@@ -248,21 +248,21 @@ export default function Export() {
 
         {exportType === 'factory' ? (
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-5">
-            <div className="bg-bg-inset rounded-lg p-3 text-center">
+            <div className="bg-bg-elevated rounded-lg p-3 text-center">
               <Factory className="w-4 h-4 text-fg-soft mx-auto mb-1" />
               <div className="text-lg font-semibold text-fg-default">
                 {preview ? preview.facilityCount.toLocaleString() : '—'}
               </div>
               <div className="text-xs text-fg-muted">Factories</div>
             </div>
-            <div className="bg-bg-inset rounded-lg p-3 text-center">
+            <div className="bg-bg-elevated rounded-lg p-3 text-center">
               <Building2 className="w-4 h-4 text-fg-soft mx-auto mb-1" />
               <div className="text-lg font-semibold text-fg-default">
                 {preview ? preview.companyCount.toLocaleString() : '—'}
               </div>
               <div className="text-xs text-fg-muted">Companies</div>
             </div>
-            <div className="bg-bg-inset rounded-lg p-3 text-center">
+            <div className="bg-bg-elevated rounded-lg p-3 text-center">
               <MapPin className="w-4 h-4 text-fg-soft mx-auto mb-1" />
               <div className="text-lg font-semibold text-fg-default">
                 {preview ? preview.stateCount : '—'}
@@ -272,7 +272,7 @@ export default function Export() {
           </div>
         ) : (
           <div className="mb-5">
-            <div className="bg-bg-inset rounded-lg p-4 text-center">
+            <div className="bg-bg-elevated rounded-lg p-4 text-center">
               <Building2 className="w-5 h-5 text-fg-soft mx-auto mb-1" />
               <div className="text-2xl font-semibold text-fg-default">
                 {preview ? preview.companyCount.toLocaleString() : '—'}
@@ -288,7 +288,7 @@ export default function Export() {
               <span>Coverage of total database</span>
               <span>{Math.round((previewCount / totalCount) * 100)}%</span>
             </div>
-            <div className="h-1.5 bg-bg-inset rounded-full overflow-hidden">
+            <div className="h-1.5 bg-bg-elevated rounded-full overflow-hidden">
               <div
                 className="h-full bg-indigo-500 rounded-full transition-all"
                 style={{ width: `${Math.min(100, (previewCount / totalCount) * 100)}%` }}
@@ -300,7 +300,7 @@ export default function Export() {
         <button
           onClick={() => generateMutation.mutate()}
           disabled={generateMutation.isPending || previewCount === 0}
-          className="w-full flex items-center justify-center gap-2 bg-indigo-500 hover:bg-indigo-600 disabled:bg-bg-inset disabled:text-fg-soft text-white font-medium rounded-lg py-2.5 px-4 text-sm transition-colors"
+          className="w-full flex items-center justify-center gap-2 bg-indigo-500 hover:bg-indigo-600 disabled:bg-bg-elevated disabled:text-fg-muted disabled:border disabled:border-white/10 disabled:cursor-not-allowed text-white font-medium rounded-lg py-2.5 px-4 text-sm transition-colors"
         >
           {generateMutation.isPending ? (
             <>
@@ -351,7 +351,7 @@ export default function Export() {
           </h3>
           <div className="space-y-2">
             {history.exports.map((exp) => (
-              <div key={exp.id} className="flex items-center justify-between py-2 px-3 bg-bg-inset rounded-lg">
+              <div key={exp.id} className="flex items-center justify-between py-2 px-3 bg-bg-elevated rounded-lg">
                 <div className="flex items-center gap-3">
                   <FileDown className="w-4 h-4 text-fg-soft" />
                   <div>

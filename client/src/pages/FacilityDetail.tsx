@@ -1,12 +1,12 @@
 import { useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { facilitiesApi } from '@/lib/api';
 import { DATA_SOURCES } from '@shared/types';
 import { MANUFACTURING_SUBSECTORS, getCategoryLabel } from '@shared/naics';
 import {
   ArrowLeft, MapPin, Hash, Building2, Database, Clock,
-  Pencil, Save, X, Check,
+  Pencil, Save, X, Check, ChevronRight,
 } from 'lucide-react';
 
 /** Format a date as M/D/YYYY HH:MM:SS AM/PM CST */
@@ -24,10 +24,11 @@ function formatCST(dateStr: string): string {
   }) + ' CST';
 }
 
+const FEDERAL_SOURCES = ['epa_echo', 'epa_tri', 'osha', 'usda_fsis', 'nhtsa'];
+
 /** Determine badge style for a source entry */
 function getSourceBadge(source: string, sourceRecordId: string | null): { label: string; className: string } {
-  const FEDERAL = ['epa_echo', 'epa_tri', 'osha', 'usda_fsis', 'faa', 'nhtsa'];
-  if (FEDERAL.includes(source)) {
+  if (FEDERAL_SOURCES.includes(source)) {
     return { label: 'Federal', className: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20' };
   }
   if (source === 'manual') {
@@ -40,29 +41,9 @@ function getSourceBadge(source: string, sourceRecordId: string | null): { label:
   return { label: 'Unknown', className: 'bg-white/5 text-fg-soft border-white/10' };
 }
 
-/** FAA Approval Type tooltips */
-const FAA_APPROVAL_INFO: Record<string, { label: string; description: string; color: string }> = {
-  PC: {
-    label: 'PC',
-    description: 'Production Certificate — OEM authorized to manufacture type-certificated aircraft, engines, or propellers',
-    color: 'sky',
-  },
-  PMA: {
-    label: 'PMA',
-    description: 'Parts Manufacturer Approval — Authorized to produce replacement or modification parts for aircraft',
-    color: 'emerald',
-  },
-  TSOA: {
-    label: 'TSOA',
-    description: 'Technical Standard Order Authorization — Produces instruments, equipment, or components meeting FAA performance standards',
-    color: 'amber',
-  },
-};
-
 /** Display name for a source */
 function getSourceDisplayName(source: string, sourceRecordId: string | null): string {
-  const FEDERAL = ['epa_echo', 'epa_tri', 'osha', 'usda_fsis', 'faa', 'nhtsa'];
-  if (FEDERAL.includes(source)) {
+  if (FEDERAL_SOURCES.includes(source)) {
     return DATA_SOURCES[source as keyof typeof DATA_SOURCES]?.name ?? source;
   }
   if (source === 'manual') {
@@ -250,27 +231,6 @@ export default function FacilityDetail() {
           <>
             <div className="flex items-start gap-3 flex-wrap">
               <h2 className="text-xl font-semibold text-fg-default">{facility.name}</h2>
-              {facility.faaApprovalTypes && facility.faaApprovalTypes.length > 0 && (
-                <div className="flex items-center gap-1.5 mt-1">
-                  {facility.faaApprovalTypes.map((type: string) => {
-                    const info = FAA_APPROVAL_INFO[type];
-                    if (!info) return null;
-                    return (
-                      <span
-                        key={type}
-                        title={info.description}
-                        className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full border cursor-help ${
-                          info.color === 'sky' ? 'bg-sky-500/10 text-sky-400 border-sky-500/20' :
-                          info.color === 'emerald' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
-                          'bg-amber-500/10 text-amber-400 border-amber-500/20'
-                        }`}
-                      >
-                        FAA {info.label}
-                      </span>
-                    );
-                  })}
-                </div>
-              )}
               {facility.nhtsaMfrId && (
                 <span
                   title="Registered manufacturer in the NHTSA Vehicle Product Information Catalog"
@@ -281,9 +241,20 @@ export default function FacilityDetail() {
               )}
             </div>
             {facility.companyName && (
-              <p className="text-sm text-fg-muted mt-1 flex items-center gap-1.5">
-                <Building2 className="w-3.5 h-3.5 text-amber-500" /> {facility.companyName}
-              </p>
+              facility.companyId ? (
+                <Link
+                  to={`/companies/${facility.companyId}`}
+                  className="text-sm text-fg-muted mt-1 inline-flex items-center gap-1.5 group hover:text-fg-default transition-colors"
+                >
+                  <Building2 className="w-3.5 h-3.5 text-amber-500" />
+                  <span className="group-hover:underline underline-offset-2">{facility.companyName}</span>
+                  <ChevronRight className="w-3 h-3 text-fg-soft group-hover:text-fg-default transition-colors" />
+                </Link>
+              ) : (
+                <p className="text-sm text-fg-muted mt-1 flex items-center gap-1.5">
+                  <Building2 className="w-3.5 h-3.5 text-amber-500" /> {facility.companyName}
+                </p>
+              )
             )}
           </>
         )}
@@ -418,7 +389,7 @@ export default function FacilityDetail() {
             {facility.facilitySources.map((fs, idx) => {
               const badge = getSourceBadge(fs.source, fs.sourceRecordId);
               const displayName = getSourceDisplayName(fs.source, fs.sourceRecordId);
-              const isFederal = ['epa_echo', 'epa_tri', 'osha', 'usda_fsis', 'faa', 'nhtsa'].includes(fs.source);
+              const isFederal = FEDERAL_SOURCES.includes(fs.source);
               const isHumanEdit = fs.source === 'manual' && fs.sourceRecordId?.startsWith('openx_edit_');
 
               return (

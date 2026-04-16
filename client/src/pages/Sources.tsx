@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { sourcesApi, pipelineApi } from '@/lib/api';
 import { DATA_SOURCES } from '@shared/types';
 import { useState } from 'react';
-import { CheckCircle2, Loader2, ChevronDown, UserCircle } from 'lucide-react';
+import { CheckCircle2, Loader2, ChevronDown, Upload, RefreshCw } from 'lucide-react';
 
 function formatCST(dateStr: string): string {
   const d = new Date(dateStr);
@@ -18,14 +18,11 @@ function formatCST(dateStr: string): string {
   }) + ' CST';
 }
 
-/** Sources that need human action (file upload or API key) */
-const REQUIRES_HUMAN: Set<string> = new Set(['faa', 'sam_gov', 'osha', 'usda_fsis']);
+/** Sources that need a manual CSV drop before they can sync */
+const REQUIRES_HUMAN: Set<string> = new Set(['osha', 'usda_fsis']);
 
-/** Detailed guidance per source */
+/** Detailed guidance per source — only for sources that need human intervention */
 const SOURCE_HELP: Record<string, string> = {
-  faa: 'Export CSV from drs.faa.gov/browse/DRSP0002 and place as downloads/faa_pah.csv',
-  sam_gov: 'Add SAM_GOV_API_KEY to your .env file — register at sam.gov/data-services',
-  sec_edgar: 'SEC rate-limits automated requests. Retry in a few minutes.',
   osha: 'Download inspection CSV from enforcedata.dol.gov and place as downloads/osha_inspections.csv',
   usda_fsis: 'Download MPI Directory CSV from fsis.usda.gov and place as downloads/fsis_directory.csv',
   census_cbp: 'Census API can be slow on first load — retry if it times out.',
@@ -56,14 +53,14 @@ export default function Sources() {
   });
 
   const envSources = Object.values(DATA_SOURCES).filter(s => s.key === 'epa_echo' || s.key === 'epa_tri');
-  const industrySources = Object.values(DATA_SOURCES).filter(s => s.key === 'faa' || s.key === 'nhtsa' || s.key === 'sam_gov' || s.key === 'sec_edgar');
+  const industrySources = Object.values(DATA_SOURCES).filter(s => s.key === 'nhtsa');
   const statisticalSources = Object.values(DATA_SOURCES).filter(s => s.key === 'census_cbp');
   const v2Sources = Object.values(DATA_SOURCES).filter(s => s.key === 'osha' || s.key === 'usda_fsis');
   const manualSource = DATA_SOURCES.manual;
   const isPipelineRunning = pipelineStatus?.running ?? false;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-5xl">
       <div>
         <h2 className="text-xl font-semibold text-fg-default">Data Sources</h2>
         <p className="text-sm text-fg-muted mt-1">Federal and partner datasets powering the pipeline</p>
@@ -144,7 +141,7 @@ function SourceGroup({ title, sources, data, isLoading, isPipelineRunning, pipel
           const recordCount = info?.rawRecordCount ?? 0;
           const isSyncing = isPipelineRunning && pipelineStatus?.currentSource === source.key;
           const isSynced = recordCount > 0 && lastRun?.status === 'completed';
-          const needsHuman = REQUIRES_HUMAN.has(source.key) && recordCount === 0;
+          const needsHuman = !isLoading && REQUIRES_HUMAN.has(source.key) && recordCount === 0;
           const hasDetails = lastRun || needsHuman;
           const showDetails = detailsOpen === source.key;
 
@@ -159,33 +156,34 @@ function SourceGroup({ title, sources, data, isLoading, isPipelineRunning, pipel
                   </div>
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">
-                  {/* Status icon */}
-                  {isSyncing ? (
-                    <Loader2 className="w-4 h-4 text-emerald-400 animate-spin" />
+                  {/* Status / Action */}
+                  {isLoading ? (
+                    <div className="h-7 w-20 rounded-md bg-white/[0.03] animate-pulse" />
+                  ) : isSyncing ? (
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-medium text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 rounded-md">
+                      <Loader2 className="w-3 h-3 animate-spin" /> Syncing
+                    </span>
                   ) : isSynced ? (
                     <button
                       onClick={() => {
                         if (window.confirm(`Re-sync ${source.name}?`)) fetchMutation.mutate(source.key);
                       }}
                       disabled={isPipelineRunning}
-                      className="relative group/tip disabled:opacity-40"
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-medium text-emerald-400 bg-emerald-500/5 border border-emerald-500/20 rounded-md hover:bg-emerald-500/10 disabled:opacity-40 transition-colors"
                     >
-                      <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                      <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 px-2 py-1 text-[10px] text-fg-default bg-bg-elevated border border-border-subtle rounded-md whitespace-nowrap opacity-0 pointer-events-none group-hover/tip:opacity-100 transition-opacity z-10">Synced — click to re-sync</span>
+                      <CheckCircle2 className="w-3 h-3" /> Synced
                     </button>
                   ) : needsHuman ? (
-                    <span className="relative group/tip">
-                      <UserCircle className="w-4 h-4 text-fg-soft" />
-                      <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 px-2 py-1 text-[10px] text-fg-default bg-bg-elevated border border-border-subtle rounded-md whitespace-nowrap opacity-0 pointer-events-none group-hover/tip:opacity-100 transition-opacity z-10">Requires human action</span>
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-medium text-amber-400 bg-amber-500/5 border border-amber-500/20 rounded-md">
+                      <Upload className="w-3 h-3" /> Manual upload
                     </span>
                   ) : (
                     <button
                       onClick={() => fetchMutation.mutate(source.key)}
                       disabled={isPipelineRunning}
-                      className="relative group/tip disabled:opacity-40"
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-medium text-indigo-300 bg-indigo-500/10 border border-indigo-500/30 rounded-md hover:bg-indigo-500/20 disabled:opacity-40 transition-colors"
                     >
-                      <CheckCircle2 className="w-4 h-4 text-fg-soft" />
-                      <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 px-2 py-1 text-[10px] text-fg-default bg-bg-elevated border border-border-subtle rounded-md whitespace-nowrap opacity-0 pointer-events-none group-hover/tip:opacity-100 transition-opacity z-10">Sync now</span>
+                      <RefreshCw className="w-3 h-3" /> Sync now
                     </button>
                   )}
 
@@ -203,7 +201,11 @@ function SourceGroup({ title, sources, data, isLoading, isPipelineRunning, pipel
 
               {/* Record count */}
               <div className="mt-2 text-xs text-fg-muted">
-                {isLoading ? '...' : `${recordCount.toLocaleString()} records`}
+                {isLoading ? (
+                  <span className="inline-block h-3 w-20 rounded bg-white/[0.03] animate-pulse align-middle" />
+                ) : (
+                  `${recordCount.toLocaleString()} records`
+                )}
               </div>
 
               {/* Details dropdown */}

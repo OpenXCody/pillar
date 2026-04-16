@@ -7,7 +7,7 @@ import type { DataSource } from '../../shared/types.js';
 
 export const sourcesRouter = Router();
 
-const VALID_SOURCES: DataSource[] = ['epa_echo', 'epa_tri', 'faa', 'nhtsa', 'sam_gov', 'sec_edgar', 'osha', 'usda_fsis'];
+const VALID_SOURCES: DataSource[] = ['epa_echo', 'epa_tri', 'nhtsa', 'census_cbp', 'osha', 'usda_fsis'];
 const ALL_SOURCES: DataSource[] = [...VALID_SOURCES, 'manual'];
 
 sourcesRouter.get('/', async (_req, res) => {

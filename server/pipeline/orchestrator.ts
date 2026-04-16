@@ -10,10 +10,7 @@ import { sourceRuns } from '../db/schema.js';
 import { eq } from 'drizzle-orm';
 import { fetchEcho } from './fetch/echoConnector.js';
 import { fetchTri } from './fetch/triConnector.js';
-import { fetchFaa } from './fetch/faaConnector.js';
 import { fetchNhtsa } from './fetch/nhtsaConnector.js';
-import { fetchSamGov } from './fetch/samConnector.js';
-import { fetchSec } from './fetch/secConnector.js';
 import { fetchCensusCbp } from './fetch/censusCbpConnector.js';
 import { fetchOsha } from './fetch/oshaConnector.js';
 import { fetchFsis } from './fetch/fsisConnector.js';
@@ -104,22 +101,10 @@ export async function runPipeline(source: DataSource): Promise<PipelineResult> {
       const triResult = await fetchTri(run.id);
       totalFetched = triResult.totalFetched;
       inserted = triResult.inserted;
-    } else if (source === 'faa') {
-      const faaResult = await fetchFaa(run.id);
-      totalFetched = faaResult.totalFetched;
-      inserted = faaResult.inserted;
     } else if (source === 'nhtsa') {
       const nhtsaResult = await fetchNhtsa(run.id);
       totalFetched = nhtsaResult.totalFetched;
       inserted = nhtsaResult.inserted;
-    } else if (source === 'sam_gov') {
-      const samResult = await fetchSamGov(run.id);
-      totalFetched = samResult.totalFetched;
-      inserted = samResult.inserted;
-    } else if (source === 'sec_edgar') {
-      const secResult = await fetchSec(run.id);
-      totalFetched = secResult.totalFetched;
-      inserted = secResult.inserted;
     } else if (source === 'census_cbp') {
       const cbpResult = await fetchCensusCbp(run.id);
       totalFetched = cbpResult.totalFetched;
