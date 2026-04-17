@@ -203,6 +203,24 @@ export const ADDRESS_STUB_PATTERNS_JS: RegExp[] = [
   /-\s*FORMER\s+SITE\s+OF\b/i,
   /\bMOBIL\s+(SERVICE|STATION)\b/i,
   /\b(DAY\s+PARTS)\s+(INC|CORP|LLC|CO)\b/i,
+
+  // Bare "TRUCKING" / "HAULING" as standalone word — catches "Arm Trucking",
+  // "70 W Trucking" that lack corporate suffix. These never appear in real
+  // mfg names.
+  /\bTRUCKING\b/i,
+  /\bHAULING\b/i,
+
+  // Specific service categories that uniquely identify non-mfg:
+  /\bPEST\s+CONTROL\b/i,
+  /\bELEVATOR\s+SERVICE\b/i,
+  /\bRAIL\s+SERVICE\b/i,
+  /\bSEALING\s+SERVICES?\b/i,
+  /\bJANITORIAL\s+(SERVICE|SERVICES|CO|INC|LLC)\b/i,
+  /\bEXTERMINATOR\b/i,
+  /\bLAWN\s+CARE\b/i,
+  /\bSECURITY\s+(SERVICE|SERVICES|GUARD)\b/i,
+  /\b(FENCE|FENCING)\s+(CO|CORP|INC|LLC)\b/i,
+  /\bCATERING\s+(CO|INC|LLC|SERVICE)\b/i,
 ];
 
 // EPA registry-prefix format: "95578 - CATERPILLAR INC". The bare digits
@@ -285,6 +303,18 @@ export const ADDRESS_STUB_PATTERNS_PG: string[] = [
   `-\\s*FORMER\\s+SITE\\s+OF\\y`,
   `\\yMOBIL\\s+(SERVICE|STATION)\\y`,
   `\\y(DAY\\s+PARTS)\\s+(INC|CORP|LLC|CO)\\y`,
+  `\\yTRUCKING\\y`,
+  `\\yHAULING\\y`,
+  `\\yPEST\\s+CONTROL\\y`,
+  `\\yELEVATOR\\s+SERVICE\\y`,
+  `\\yRAIL\\s+SERVICE\\y`,
+  `\\ySEALING\\s+SERVICES?\\y`,
+  `\\yJANITORIAL\\s+(SERVICE|SERVICES|CO|INC|LLC)\\y`,
+  `\\yEXTERMINATOR\\y`,
+  `\\yLAWN\\s+CARE\\y`,
+  `\\ySECURITY\\s+(SERVICE|SERVICES|GUARD)\\y`,
+  `\\y(FENCE|FENCING)\\s+(CO|CORP|INC|LLC)\\y`,
+  `\\yCATERING\\s+(CO|INC|LLC|SERVICE)\\y`,
 ];
 
 export const EPA_PREFIX_PG = `^\\d+\\s*-\\s*[A-Z]`;
