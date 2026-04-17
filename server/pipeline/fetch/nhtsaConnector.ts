@@ -13,6 +13,7 @@ import { db } from '../../db/index.js';
 import { rawRecords, sourceRuns } from '../../db/schema.js';
 import { eq } from 'drizzle-orm';
 import { updateProgress } from '../orchestrator.js';
+import { isAddressStub } from '../../../shared/addressStubFilter.js';
 
 const NHTSA_API_BASE = 'https://vpic.nhtsa.dot.gov/api/vehicles';
 const PAGE_SIZE = 100;
@@ -292,8 +293,9 @@ async function insertNhtsaRecords(records: NhtsaManufacturer[], runId: string): 
   let inserted = 0;
   const errors: string[] = [];
 
-  for (let i = 0; i < records.length; i += BATCH_SIZE) {
-    const batch = records.slice(i, i + BATCH_SIZE).map(row => {
+  const filtered = records.filter(row => !isAddressStub(row.Mfr_CommonName || row.Mfr_Name));
+  for (let i = 0; i < filtered.length; i += BATCH_SIZE) {
+    const batch = filtered.slice(i, i + BATCH_SIZE).map(row => {
       const name = row.Mfr_CommonName || row.Mfr_Name;
       const vehicleTypeNames = (row.VehicleTypes || []).map(vt => vt.Name);
 

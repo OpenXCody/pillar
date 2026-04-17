@@ -24,6 +24,7 @@ import { db } from '../../db/index.js';
 import { rawRecords, sourceRuns } from '../../db/schema.js';
 import { eq } from 'drizzle-orm';
 import { updateProgress } from '../orchestrator.js';
+import { isAddressStub } from '../../../shared/addressStubFilter.js';
 
 const DOWNLOAD_DIR = path.join(process.cwd(), 'downloads');
 const FSIS_CSV_PATH = path.join(DOWNLOAD_DIR, 'fsis_directory.csv');
@@ -282,8 +283,9 @@ async function insertFsisRecords(records: FsisEstablishment[], runId: string): P
   let inserted = 0;
   const errors: string[] = [];
 
-  for (let i = 0; i < records.length; i += BATCH_SIZE) {
-    const batch = records.slice(i, i + BATCH_SIZE).map(r => ({
+  const filtered = records.filter(r => !isAddressStub(r.company || r.dbaName));
+  for (let i = 0; i < filtered.length; i += BATCH_SIZE) {
+    const batch = filtered.slice(i, i + BATCH_SIZE).map(r => ({
       source: 'usda_fsis' as const,
       sourceRunId: runId,
       sourceRecordId: `FSIS-${r.estNumber}`,

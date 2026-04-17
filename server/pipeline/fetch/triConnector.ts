@@ -14,6 +14,7 @@
 import { db } from '../../db/index.js';
 import { rawRecords, sourceRuns } from '../../db/schema.js';
 import { eq } from 'drizzle-orm';
+import { isAddressStub } from '../../../shared/addressStubFilter.js';
 
 const TRI_API_BASE = 'https://data.epa.gov/efservice';
 const PAGE_SIZE = 10000;
@@ -122,8 +123,9 @@ async function insertTriRecords(rows: TriFacilityRow[], runId: string): Promise<
   let inserted = 0;
   const errors: string[] = [];
 
-  for (let i = 0; i < rows.length; i += BATCH_SIZE) {
-    const batch = rows.slice(i, i + BATCH_SIZE).map(row => ({
+  const filtered = rows.filter(row => !isAddressStub(row.facility_name));
+  for (let i = 0; i < filtered.length; i += BATCH_SIZE) {
+    const batch = filtered.slice(i, i + BATCH_SIZE).map(row => ({
       source: 'epa_tri' as const,
       sourceRunId: runId,
       sourceRecordId: row.tri_facility_id || null,

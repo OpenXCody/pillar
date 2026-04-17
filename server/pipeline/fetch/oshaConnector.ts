@@ -22,6 +22,7 @@ import Papa from 'papaparse';
 import { db } from '../../db/index.js';
 import { rawRecords, sourceRuns } from '../../db/schema.js';
 import { eq } from 'drizzle-orm';
+import { isAddressStub } from '../../../shared/addressStubFilter.js';
 import { updateProgress } from '../orchestrator.js';
 
 const DOWNLOAD_DIR = path.join(process.cwd(), 'downloads');
@@ -345,8 +346,9 @@ async function insertOshaRecords(records: OshaEstablishment[], runId: string): P
   let inserted = 0;
   const errors: string[] = [];
 
-  for (let i = 0; i < records.length; i += BATCH_SIZE) {
-    const batch = records.slice(i, i + BATCH_SIZE).map(r => {
+  const filtered = records.filter(r => !isAddressStub(r.establishmentName));
+  for (let i = 0; i < filtered.length; i += BATCH_SIZE) {
+    const batch = filtered.slice(i, i + BATCH_SIZE).map(r => {
       // Use NAICS if available, otherwise convert from SIC
       let naics = r.naicsCode || null;
       if (!naics && r.sicCode) {

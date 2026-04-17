@@ -20,6 +20,7 @@ import { db } from '../../db/index.js';
 import { rawRecords, sourceRuns } from '../../db/schema.js';
 import { eq } from 'drizzle-orm';
 import { isManufacturingNaics } from '../../../shared/naics.js';
+import { isAddressStub } from '../../../shared/addressStubFilter.js';
 
 const ECHO_DOWNLOAD_URL = 'https://echo.epa.gov/files/echodownloads/echo_exporter.zip';
 const DOWNLOAD_DIR = path.join(process.cwd(), 'downloads');
@@ -143,6 +144,11 @@ async function parseAndInsert(csvPath: string, runId: string): Promise<EchoFetch
 
         // Filter: only manufacturing NAICS
         if (!hasManufacturingNaics(data.FAC_NAICS_CODES)) return;
+
+        // Filter: reject address-stub / property-owner LLC names. The
+        // EPA dataset contains lots of shell entities registered against
+        // specific addresses; they are not manufacturers.
+        if (isAddressStub(data.FAC_NAME)) return;
 
         result.manufacturingCount++;
 
